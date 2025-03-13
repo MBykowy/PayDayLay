@@ -1,0 +1,157 @@
+# Szczegółowa implementacja poszczególnych funkcjonalności
+
+## 1. Logowanie/rejestracja
+1. Utworzyć `LoginActivity.java` i `RegisterActivity.java` z odpowiednimi layoutami
+2. Zaimplementować `AuthManager.java` do obsługi Firebase Authentication
+3. Dodać formularze logowania i rejestracji z walidacją danych
+4. Utworzyć ekran reset hasła
+5. Zaimplementować zapisywanie sesji użytkownika w `SharedPreferences`
+6. Dodać przekierowanie do głównej aktywności po udanym logowaniu
+
+## 2. Tryb jasny/ciemny
+1. Utworzyć plik `themes.xml` i `themes.xml (night)` z kolorami dla obu trybów
+2. Zaimplementować `ThemeUtils.java` do zarządzania motywem
+3. Dodać przełącznik w `SettingsActivity`
+4. Zastosować atrybuty `?attr/colorPrimary` zamiast hardkodowanych kolorów
+5. Zapisywać preferencje motywu w `SharedPreferences`
+6. Zastosować zmianę motywu poprzez `AppCompatDelegate.setDefaultNightMode()`
+
+## 3. Zmiana języka
+1. Utworzyć pliki zasobów `strings.xml` dla różnych języków (np. `values/strings.xml` i `values-pl/strings.xml`)
+2. Zaimplementować `LocaleHelper.java` do zarządzania językiem
+3. Dodać wybór języka w `SettingsActivity`
+4. Zapisywać preferencje języka w `SharedPreferences`
+5. Zastosować zmianę kontekstu aplikacji z nowym locale po zmianie języka
+6. Zaimplementować `attachBaseContext` w głównej aktywności
+
+## 4. Dodawanie/edycja transakcji
+1. Utworzyć model danych `Transaction.java`
+2. Zaimplementować `TransactionActivity.java` do dodawania/edycji transakcji
+3. Utworzyć formularz z polami: kwota, data, kategoria, opis
+4. Dodać DatePicker do wyboru daty
+5. Zaimplementować zapisywanie do Firebase Firestore
+6. Dodać funkcjonalność edycji istniejących transakcji
+7. Implementować usuwanie transakcji z potwierdzeniem
+
+## 5. Kategorie wydatków + sortowanie
+1. Utworzyć model `Category.java`
+2. Zaimplementować `CategoriesFragment.java` do zarządzania kategoriami
+3. Utworzyć `CategoryAdapter.java` do wyświetlania listy kategorii
+4. Dodać możliwość tworzenia własnych kategorii
+5. Zaimplementować sortowanie transakcji po kategoriach
+6. Dodać filtrowanie transakcji po kategoriach
+7. Zaimplementować widok statystyk dla każdej kategorii
+
+## 6. Wykresy + eksport do PDF
+1. Dodać bibliotekę MPAndroidChart w `build.gradle`
+2. Zaimplementować `ChartsFragment.java` z różnymi typami wykresów (kołowy, słupkowy)
+3. Utworzyć funkcje pobierania i agregacji danych do wykresów
+4. Dodać bibliotekę iText do eksportu PDF
+5. Zaimplementować `PdfExporter.java` do generowania raportów
+6. Dodać opcję udostępniania wygenerowanych plików PDF
+7. Implementować podgląd przed eksportem
+
+## 7. Powiadomienia o budżecie
+1. Utworzyć model `Budget.java` do przechowywania limitów budżetowych
+2. Zaimplementować `NotificationUtils.java` do tworzenia powiadomień
+3. Utworzyć kanał powiadomień w `Application` klasie
+4. Zaimplementować serwis sprawdzający przekroczenie budżetu
+5. Ustawić `AlarmManager` do cyklicznego sprawdzania
+6. Dodać opcję włączania/wyłączania powiadomień w ustawieniach
+7. Implementować niestandardowe dźwięki/wibracje dla powiadomień
+
+## 8. Połączenie z Firebase
+1. Zarejestrować aplikację w konsoli Firebase i pobrać `google-services.json`
+2. Dodać zależności Firebase w `build.gradle`
+3. Zaimplementować `DatabaseManager.java` do operacji CRUD
+4. Skonfigurować Firebase Authentication dla logowania
+5. Utworzyć strukturę bazy danych w Firestore
+6. Dodać indeksowanie dla wydajnych zapytań
+7. Implementować synchronizację offline
+
+## 9. Widget z budżetem
+1. Utworzyć layout `budget_widget.xml`
+2. Zaimplementować `BudgetWidgetProvider.java` rozszerzającą `AppWidgetProvider`
+3. Dodać deklarację widgetu w `AndroidManifest.xml`
+4. Utworzyć `WidgetConfigurationActivity.java` jeśli widget ma być konfigurowalny
+5. Zaimplementować pobieranie danych budżetowych do widgetu
+6. Dodać odświeżanie widgetu przy zmianie danych
+7. Implementować interakcję z widgetem (np. kliknięcie przenosi do aplikacji)
+
+## 10. Eksport transakcji do CSV
+1. Dodać bibliotekę OpenCSV w `build.gradle`
+2. Zaimplementować `CsvExporter.java` do konwersji danych
+3. Dodać funkcję eksportu w menu aplikacji
+4. Utworzyć metodę mapowania transakcji do formatu CSV
+5. Zaimplementować zapis pliku do pamięci zewnętrznej z odpowiednimi uprawnieniami
+6. Dodać opcję udostępniania pliku CSV
+7. Implementować wybór zakresu dat do eksportu
+
+
+struktura plików:
+app/
+├── src/
+│   ├── main/
+│   │   ├── java/com/example/expensemanager/
+│   │   │   ├── activities/            # Główne ekrany
+│   │   │   │   ├── MainActivity.java
+│   │   │   │   ├── LoginActivity.java
+│   │   │   │   ├── RegisterActivity.java
+│   │   │   │   ├── TransactionActivity.java
+│   │   │   │   └── SettingsActivity.java
+│   │   │   │
+│   │   │   ├── fragments/             # Fragmenty UI
+│   │   │   │   ├── DashboardFragment.java
+│   │   │   │   ├── TransactionsFragment.java
+│   │   │   │   ├── CategoriesFragment.java
+│   │   │   │   └── ChartsFragment.java
+│   │   │   │
+│   │   │   ├── adapters/              # Adaptery list
+│   │   │   │   ├── TransactionAdapter.java
+│   │   │   │   └── CategoryAdapter.java
+│   │   │   │
+│   │   │   ├── models/                # Modele danych
+│   │   │   │   ├── Transaction.java
+│   │   │   │   ├── Category.java
+│   │   │   │   ├── User.java
+│   │   │   │   └── Budget.java
+│   │   │   │
+│   │   │   ├── firebase/              # Firebase
+│   │   │   │   ├── AuthManager.java
+│   │   │   │   └── DatabaseManager.java
+│   │   │   │
+│   │   │   ├── utils/                 # Narzędzia
+│   │   │   │   ├── ThemeUtils.java
+│   │   │   │   ├── LocaleHelper.java
+│   │   │   │   ├── NotificationUtils.java
+│   │   │   │   ├── PdfExporter.java
+│   │   │   │   └── CsvExporter.java
+│   │   │   │
+│   │   │   └── widgets/               # Widżety
+│   │   │       └── BudgetWidgetProvider.java
+│   │   │
+│   │   ├── res/
+│   │   │   ├── layout/                # Układy UI
+│   │   │   │   ├── activity_main.xml
+│   │   │   │   ├── activity_login.xml
+│   │   │   │   ├── fragment_dashboard.xml
+│   │   │   │   └── ...
+│   │   │   │
+│   │   │   ├── values/                # Zasoby
+│   │   │   │   ├── colors.xml
+│   │   │   │   ├── strings.xml
+│   │   │   │   └── styles.xml
+│   │   │   │
+│   │   │   ├── values-night/          # Tryb ciemny
+│   │   │   │   └── colors.xml
+│   │   │   │
+│   │   │   ├── values-pl/             # Polski język
+│   │   │   │   └── strings.xml
+│   │   │   │
+│   │   │   └── drawable/              # Ikony i grafiki
+│   │   │
+│   │   └── AndroidManifest.xml
+│   │
+│   └── google-services.json          # Konfiguracja Firebase
+│
+└── build.gradle                      # Zależności
