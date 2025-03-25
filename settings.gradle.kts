@@ -7,8 +7,12 @@ pluginManagement {
                 includeGroupByRegex("androidx.*")
             }
         }
+        google()
         mavenCentral()
         gradlePluginPortal()
+    }
+    plugins {
+        id("com.google.gms.google-services") version "4.4.2"
     }
 }
 dependencyResolutionManagement {
@@ -16,9 +20,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven(url = "https://jitpack.io") // Add this line for MPAndroidChart
     }
 }
 
 rootProject.name = "PayDayLay"
 include(":app")
- 

@@ -1,10 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!-- Light theme colors -->
+    <color name="primary">#4CAF50</color>
+    <color name="primary_dark">#388E3C</color>
+    <color name="accent">#FF9800</color>
+    <color name="accent_dark">#F57C00</color>
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_background">#212121</color>
+    <color name="on_surface">#212121</color>
+
+    <!-- Dark theme colors -->
+    <color name="primary_night">#81C784</color>
+    <color name="primary_dark_night">#66BB6A</color>
+    <color name="accent_night">#FFB74D</color>
+    <color name="accent_dark_night">#FFA726</color>
+    <color name="background_night">#121212</color>
+    <color name="surface_night">#1E1E1E</color>
+    <color name="on_background_night">#EEEEEE</color>
+    <color name="on_surface_night">#EEEEEE</color>
+
+    <!-- Common colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Category colors -->
+    <color name="category_color_1">#4285F4</color> <!-- Blue -->
+    <color name="category_color_2">#EA4335</color> <!-- Red -->
+    <color name="category_color_3">#34A853</color> <!-- Green -->
+    <color name="category_color_4">#FBBC05</color> <!-- Yellow -->
+    <color name="category_color_5">#9C27B0</color> <!-- Purple -->
+    <color name="category_color_6">#FF9800</color> <!-- Orange -->
+    <color name="category_color_7">#00BCD4</color> <!-- Cyan -->
+    <color name="category_color_8">#795548</color> <!-- Brown -->
+
+    <!-- For light theme -->
+    <color name="expense_color">#F44336</color>  <!-- Red -->
+    <color name="income_color">#4CAF50</color>  <!-- Green -->
+
 </resources>

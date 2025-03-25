@@ -1,0 +1,34 @@
+<!-- Save this as widget_preview.xml in your app/src/main/res/drawable/ folder -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="180dp"
+    android:height="110dp"
+    android:viewportWidth="180"
+    android:viewportHeight="110">
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M0,0h180v110h-180z"/>
+    <path
+        android:fillColor="#9C27B0"
+        android:pathData="M0,0h180v24h-180z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M90,12L90,12C91.1,12 92,12.9 92,14L92,14C92,15.1 91.1,16 90,16L90,16C88.9,16 88,15.1 88,14L88,14C88,12.9 88.9,12 90,12Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,35h30v4h-30z"/>
+    <path
+        android:fillColor="#DDDDDD"
+        android:pathData="M35,45h110v8h-110z"/>
+    <path
+        android:fillColor="#9C27B0"
+        android:pathData="M35,45h70v8h-70z"/>
+    <path
+        android:fillColor="#333333"
+        android:pathData="M40,60h40v4h-40z"/>
+    <path
+        android:fillColor="#333333"
+        android:pathData="M110,60h30v4h-30z"/>
+    <path
+        android:fillColor="#666666"
+        android:pathData="M85,85h10v3h-10z"/>
+</vector>

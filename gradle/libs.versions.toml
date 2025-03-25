@@ -5,6 +5,17 @@ junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
 material = "1.10.0"
+firebaseFirestore = "25.1.2"
+firebaseAuth = "23.2.0"
+materialVersion = "1.12.0"
+mpandroidchart = "v3.1.0"
+itextpdf = "5.5.13.4"
+googleServices = "4.4.2"
+firebaseCore = "21.1.1"
+firebaseStorage = "21.0.1"
+opencsv = "5.10"
+playServicesSafetynet = "18.1.0"
+preference = "1.2.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -12,6 +23,17 @@ ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitV
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+google-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
+mpandroidchart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpandroidchart" }
+itextpdf = { group = "com.itextpdf", name = "itextpdf", version.ref = "itextpdf" }
+google-services = { group = "com.google.gms", name = "google-services", version.ref = "googleServices" }
+firebase-core = { group = "com.google.firebase", name = "firebase-core", version.ref = "firebaseCore" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
+opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
+play-services-safetynet = { module = "com.google.android.gms:play-services-safetynet", version.ref = "playServicesSafetynet" }
+preference = { group = "androidx.preference", name = "preference", version.ref = "preference" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

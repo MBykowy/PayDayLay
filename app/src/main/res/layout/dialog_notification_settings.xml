@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Switch
+        android:id="@+id/switchVibration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/vibration"
+        android:padding="8dp" />
+
+    <Button
+        android:id="@+id/buttonSelectSound"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/select_notification_sound"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

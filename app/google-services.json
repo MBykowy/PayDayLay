@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "635132568168",
+    "firebase_url": "https://paydaylay-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "paydaylay",
+    "storage_bucket": "paydaylay.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:635132568168:android:cfac5d51591b1ea53011dd",
+        "android_client_info": {
+          "package_name": "com.example.paydaylay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1hr6r6mcXwkpRAVrAaHTNPzHs7oralBw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

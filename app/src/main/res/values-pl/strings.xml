@@ -1,0 +1,219 @@
+<resources>
+    <string name="app_name">PayDayLay</string>
+
+    <!-- Navigation drawer strings -->
+    <string name="navigation_drawer_open">Otwórz szufladę nawigacyjną</string>
+    <string name="navigation_drawer_close">Zamknij szufladę nawigacyjną</string>
+    <string name="menu_dashboard">Panel główny</string>
+    <string name="menu_transactions">Transakcje</string>
+    <string name="menu_categories">Kategorie</string>
+    <string name="menu_charts">Wykresy</string>
+    <string name="menu_settings">Ustawienia</string>
+    <string name="menu_logout">Wyloguj</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ustawienia</string>
+    <string name="theme_title">Motyw</string>
+    <string name="theme_system">Domyślny systemowy</string>
+    <string name="theme_light">Jasny</string>
+    <string name="theme_dark">Ciemny</string>
+    <string name="language_title">Język</string>
+    <string name="language_english">Angielski</string>
+    <string name="language_polish">Polski</string>
+
+    <!-- Transaction related strings -->
+    <string name="add_transaction">Dodaj transakcję</string>
+    <string name="edit_transaction">Edytuj transakcję</string>
+    <string name="amount">Kwota</string>
+    <string name="date">Data</string>
+    <string name="category">Kategoria</string>
+    <string name="description">Opis (opcjonalnie)</string>
+    <string name="expense">Wydatek</string>
+    <string name="income">Przychód</string>
+    <string name="save">Zapisz</string>
+    <string name="delete">Usuń</string>
+
+    <!-- Napisy związane z transakcjami -->
+    <string name="no_description">Brak opisu</string>
+    <string name="unknown_category">Nieznana kategoria</string>
+    <string name="currency_symbol">zł</string> <!-- Jeśli chodzi o polską walutę, można zmienić na "PLN" -->
+    <string name="expense_color">#F44336</string>
+    <string name="income_color">#4CAF50</string>
+    <string name="no_transactions_yet">Brak transakcji</string>
+    <string name="tap_plus_to_add_transaction">Dotknij przycisku +, aby dodać pierwszą transakcję</string>
+
+    <!-- Napisy związane z eksportem PDF -->
+    <string name="financial_report">Raport finansowy</string>
+    <string name="generated_on">Wygenerowano dnia</string>
+    <string name="summary">Podsumowanie</string>
+    <string name="transactions">Transakcje</string>
+    <string name="total_income">Całkowite przychody</string>
+    <string name="total_expenses">Całkowite wydatki</string>
+    <string name="balance">Saldo</string>
+    <string name="pdf_exported_successfully">Plik PDF został pomyślnie wyeksportowany do: %1$s</string>
+    <string name="pdf_export_failed">Nie udało się wyeksportować pliku PDF: %1$s</string>
+    <string name="no_data_to_export">Brak danych do eksportu</string>
+    <string name="storage_permission_denied">Odmówiono dostępu do pamięci</string>
+
+    <!-- Napisy związane z powiadomieniami budżetowymi -->
+    <string name="budget_alerts">Alerty budżetowe</string>
+    <string name="budget_alerts_description">Powiadomienia, gdy przekroczysz limity budżetowe</string>
+    <string name="budget_alert_title">Alert budżetowy</string>
+    <string name="budget_alert_text">%1$s: Wydano %2$s z %3$s %4$s</string>
+    <string name="budget_alert_big_text">Twój budżet %1$s %2$s został przekroczony.\n\nWydano: %3$s %5$s\nLimit: %4$s %5$s</string>
+    <string name="overall_budget">Budżet ogólny</string>
+    <string name="for_day">dla %1$s</string>
+    <string name="for_week">dla %1$s - %2$s</string>
+    <string name="for_month">dla %1$s - %2$s</string>
+    <string name="for_year">dla %1$s - %2$s</string>
+    <string name="notifications">Powiadomienia</string>
+    <string name="enable_budget_notifications">Włącz powiadomienia budżetowe</string>
+    <string name="customize_notifications">Dostosuj powiadomienia</string>
+    <string name="vibration">Wibracja</string>
+    <string name="select_notification_sound">Wybierz dźwięk powiadomienia</string>
+    <string name="cancel">Anuluj</string>
+
+    <!-- Napisy ostrzeżeń budżetowych -->
+    <string name="budget_warning_title">Ostrzeżenie budżetowe</string>
+    <string name="budget_warning_text">%1$s: Wykorzystano %2$d%% budżetu</string>
+    <string name="budget_warning_big_text">Twój budżet %1$s %2$s jest wykorzystany w %3$d%%.\n\nWydano: %4$s %6$s\nLimit: %5$s %6$s</string>
+    <string name="ic_budget_warning">Ostrzeżenie budżetowe</string>
+
+    <!-- Eksport CSV -->
+    <string name="export_to_csv">Eksportuj do CSV</string>
+    <string name="export_successful">Eksport zakończony sukcesem</string>
+    <string name="file_saved_to">Plik zapisano w: %1$s</string>
+    <string name="share">Udostępnij</string>
+    <string name="close">Zamknij</string>
+    <string name="export_failed">Eksport nie powiódł się: %1$s</string>
+    <string name="error_loading_transactions">Błąd podczas ładowania transakcji</string>
+    <string name="error_loading_categories">Błąd podczas ładowania kategorii</string>
+    <string name="no_transactions_to_export">Brak transakcji do eksportu</string>
+    <string name="not_logged_in">Musisz być zalogowany, aby eksportować dane</string>
+    <string name="error_creating_directory">Nie można utworzyć katalogu dla pliku eksportu</string>
+    <string name="share_csv_file">Udostępnij plik CSV</string>
+    <string name="select_date_range">Wybierz zakres dat dla eksportu</string>
+    <string name="export">Eksportuj</string>
+    <string name="quick_selections">Szybkie wybory</string>
+    <string name="this_month">Ten miesiąc</string>
+    <string name="last_month">Poprzedni miesiąc</string>
+    <string name="last_3_months">Ostatnie 3 miesiące</string>
+    <string name="this_year">Ten rok</string>
+    <string name="custom_range">Zakres niestandardowy</string>
+    <string name="from">Od:</string>
+    <string name="to">Do:</string>
+    <string name="select">Wybierz</string>
+    <string name="summary_title">Podsumowanie</string>
+
+    <!-- Category Activity Strings -->
+    <string name="edit_category">Edytuj kategorię</string>
+    <string name="add_category">Dodaj kategorię</string>
+    <string name="category_name_required">Nazwa kategorii jest wymagana</string>
+    <string name="category_updated">Kategoria została pomyślnie zaktualizowana</string>
+    <string name="error_updating_category">Błąd podczas aktualizacji kategorii: </string>
+    <string name="category_added">Kategoria została pomyślnie dodana</string>
+    <string name="error_adding_category">Błąd podczas dodawania kategorii: </string>
+    <string name="delete_category">Usuń kategorię</string>
+    <string name="delete_category_confirmation">Czy na pewno chcesz usunąć tę kategorię? Wszystkie transakcje przypisane do tej kategorii zostaną zmodyfikowane.</string>
+    <string name="category_deleted">Kategoria została pomyślnie usunięta</string>
+    <string name="error_deleting_category">Błąd podczas usuwania kategorii: </string>
+
+    <string name="enable_notifications">Włącz powiadomienia</string>
+
+    <string name="sort_categories">Sortuj kategorie</string>
+    <string name="sort_by_name_asc">Nazwa (A-Z)</string>
+    <string name="sort_by_name_desc">Nazwa (Z-A)</string>
+
+    <!-- Napisy związane z wykresami -->
+    <string name="expenses_by_category">Wydatki według kategorii</string>
+    <string name="monthly_summary">Miesięczne podsumowanie</string>
+    <string name="expenses">Wydatki</string>
+    <string name="export_to_pdf">Eksportuj do PDF</string>
+
+    <!-- Tablice dla wykresów -->
+    // In strings.xml, update chart_types array:
+    <string-array name="chart_types">
+        <item>Expenses by category</item>
+        <item>Income by category</item>
+        <item>Monthly comparison</item>
+    </string-array>
+
+    <string-array name="time_frames">
+        <item>Ten tydzień</item>
+        <item>Ten miesiąc</item>
+        <item>Ostatnie 3 miesiące</item>
+        <item>Ostatnie 6 miesięcy</item>
+        <item>Ten rok</item>
+        <item>Cały czas</item>
+    </string-array>
+
+    <string-array name="months">
+        <item>Sty</item>
+        <item>Lut</item>
+        <item>Mar</item>
+        <item>Kwi</item>
+        <item>Maj</item>
+        <item>Cze</item>
+        <item>Lip</item>
+        <item>Sie</item>
+        <item>Wrz</item>
+        <item>Paź</item>
+        <item>Lis</item>
+        <item>Gru</item>
+    </string-array>
+
+    <string name="csv_exported_successfully">Plik CSV został wyeksportowany do: %1$s</string>
+    <string name="csv_export_failed">Eksport nie powiódł się: %1$s</string>
+
+    <string name="type">Typ</string>
+
+    <!-- Dodatkowe napisy -->
+    <string name="chart_type">Typ wykresu</string>
+    <string name="time_period">Okres czasu</string>
+
+    <string name="please_login_first">Zaloguj się najpierw</string>
+
+    <string name="loading">Ładowanie...</string>
+    <string name="spent_format" formatted="false">Wydano: %.2f %s</string>
+    <string name="remaining_format" formatted="false">Pozostało: %.2f %s</string>
+    <string name="last_updated">Ostatnia aktualizacja: %s</string>
+    <string name="budget_status">Status budżetu</string>
+    <string name="no_budget_set">Brak ustawionego budżetu</string>
+    <string name="error_loading_data">Błąd podczas ładowania danych</string>
+
+    <!-- Napisy związane z kategoriami -->
+    <string name="category_name">Nazwa kategorii</string>
+    <string name="select_color">Wybierz kolor</string>
+    <string name="select_icon">Wybierz ikonę</string>
+
+    <!-- Konfiguracja widżetu -->
+    <string name="configure_widget">Konfiguracja widżetu</string>
+    <string name="select_category">Wybierz kategorię</string>
+    <string name="select_budget_period">Wybierz okres budżetowy</string>
+    <string name="no_data_to_display">Brak danych do wyświetlenia</string>
+    <string name="daily">Dziennie</string>
+    <string name="weekly">Tygodniowo</string>
+    <string name="monthly">Miesięcznie</string>
+    <string name="yearly">Rocznie</string>
+
+    <!-- Dodatkowe napisy dla widżetu budżetu -->
+    <string name="spent_placeholder">Wydano: 0.00</string>
+    <string name="remaining_placeholder">Pozostało: 0.00</string>
+
+    <!-- Napisy dla fragmentu kategorii -->
+    <string name="no_categories_yet">Brak kategorii</string>
+    <string name="tap_plus_to_add_category">Dotknij przycisku +, aby dodać nową kategorię</string>
+
+    <!-- Wybór ikony kategorii -->
+    <string name="category_icon">Ikona kategorii</string>
+    <string name="icon_selected">Ikona wybrana</string>
+
+    <string name="income_by_category">Income by category</string>
+
+    <string name="exporting_pdf">Exporting chart to PDF...</string>
+    <string name="view_file">View File</string>
+    <string name="cannot_open_pdf">Cannot open PDF file</string>
+
+
+
+</resources>
