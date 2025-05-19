@@ -11,10 +11,20 @@ import android.util.Log;
 
 import com.example.paydaylay.utils.AlarmPermissionHelper;
 
+/**
+ * Odbiornik odpowiedzialny za obsługę aktualizacji widżetów budżetowych.
+ * Obsługuje zdarzenia aktualizacji i planuje kolejne aktualizacje.
+ */
 public class WidgetUpdateReceiver extends BroadcastReceiver {
     private static final String TAG = "WidgetUpdateReceiver";
     public static final String ACTION_UPDATE_WIDGETS = "com.example.paydaylay.ACTION_UPDATE_WIDGETS";
 
+    /**
+     * Metoda wywoływana po odebraniu zdarzenia.
+     *
+     * @param context Kontekst aplikacji.
+     * @param intent  Intencja zawierająca szczegóły zdarzenia.
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         try {

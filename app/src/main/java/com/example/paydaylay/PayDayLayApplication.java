@@ -16,48 +16,61 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
+/**
+ * Główna klasa aplikacji, odpowiedzialna za inicjalizację kluczowych komponentów i konfiguracji.
+ * Rozszerza klasę Application, co pozwala na wykonywanie operacji globalnych dla całej aplikacji.
+ */
 public class PayDayLayApplication extends Application {
     private static final String TAG = "PayDayLayApplication";
 
+    /**
+     * Metoda wywoływana przed `onCreate`, pozwala na dostosowanie kontekstu aplikacji.
+     *
+     * @param base Bazowy kontekst aplikacji.
+     */
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
     }
 
+    /**
+     * Metoda wywoływana podczas tworzenia aplikacji.
+     * Inicjalizuje Firebase, bazę danych Room, motywy, powiadomienia i inne kluczowe komponenty.
+     */
     @Override
     public void onCreate() {
         super.onCreate();
 
-        // Initialize Firebase early
+        // Inicjalizacja Firebase
         FirebaseApp.initializeApp(this);
 
-        // Configure Firebase emulators in debug mode - BEFORE any other Firebase operations
+        // Konfiguracja emulatorów Firebase w trybie debugowania
         if (BuildConfig.DEBUG) {
             try {
-                // Set emulator hosts for ALL Firebase services
-                //FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080);
-                //FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099);
+                // Konfiguracja emulatorów Firebase (jeśli potrzebne)
+                // FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080);
+                // FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099);
 
-                // Disable SSL verification for emulator connections
-                //Log.d(TAG, "Firebase emulators configured successfully");
+                // Wyłączenie weryfikacji SSL dla połączeń z emulatorami
+                // Log.d(TAG, "Firebase emulators configured successfully");
             } catch (Exception e) {
                 Log.e(TAG, "Firebase emulator setup failed", e);
             }
         }
 
-        // Configure Firebase offline persistence
+        // Konfiguracja Firebase z włączoną persystencją offline
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .build();
         FirebaseFirestore.getInstance().setFirestoreSettings(settings);
 
-        // Initialize Room database
+        // Inicjalizacja bazy danych Room
         AppDatabase.getInstance(this);
 
-        // Skip App Check initialization as it's causing issues
+        // Pominięcie inicjalizacji App Check (jeśli powoduje problemy)
         // DatabaseManager.initAppCheck(this);
 
-        // Check Google Play Services availability
+        // Sprawdzenie dostępności Google Play Services
         int status = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
         if (status != ConnectionResult.SUCCESS) {
             Log.w(TAG, "Google Play Services not available. Status code: " + status);
@@ -65,10 +78,10 @@ public class PayDayLayApplication extends Application {
             Log.d(TAG, "Google Play Services available");
         }
 
-        // Apply saved theme
+        // Zastosowanie zapisanego motywu
         ThemeUtils.applyTheme(this);
 
-        // Create notification channels
+        // Tworzenie kanałów powiadomień
         NotificationUtils.createNotificationChannels(this);
     }
 }

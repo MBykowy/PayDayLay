@@ -27,44 +27,61 @@ import com.example.paydaylay.fragments.CategoriesFragment;
 import com.example.paydaylay.fragments.ChartsFragment;
 import com.example.paydaylay.fragments.BudgetFragment;
 
+/**
+ * Główna aktywność aplikacji, która obsługuje nawigację pomiędzy różnymi fragmentami
+ * oraz zarządza szufladą nawigacyjną.
+ */
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-    private DrawerLayout drawerLayout;
-    private NavigationView navigationView;
-    private Toolbar toolbar;
-    private AuthManager authManager;
+    private DrawerLayout drawerLayout; // Layout szuflady nawigacyjnej
+    private NavigationView navigationView; // Widok nawigacji
+    private Toolbar toolbar; // Pasek narzędzi
+    private AuthManager authManager; // Menedżer uwierzytelniania użytkownika
 
+    /**
+     * Dołącza kontekst bazowy z odpowiednimi ustawieniami lokalizacji.
+     *
+     * @param newBase bazowy kontekst aplikacji
+     */
     @Override
     protected void attachBaseContext(Context newBase) {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
     }
 
+    /**
+     * Wywoływane podczas tworzenia aktywności. Inicjalizuje widoki, sprawdza stan logowania
+     * użytkownika oraz ustawia domyślny fragment.
+     *
+     * @param savedInstanceState Jeżeli aktywność jest ponownie inicjowana po wcześniejszym zamknięciu,
+     *                           ten Bundle zawiera dane, które zostały ostatnio zapisane w onSaveInstanceState(Bundle).
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Żądanie uprawnień do powiadomień
         NotificationUtils.requestNotificationPermission(this);
-
 
         authManager = new AuthManager();
 
-        // Check if user is logged in
+        // Sprawdzenie, czy użytkownik jest zalogowany
         if (!authManager.isLoggedIn()) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
-        // Set up toolbar
+        // Inicjalizacja paska narzędzi
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Set up drawer layout
+        // Inicjalizacja szuflady nawigacyjnej
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        // Konfiguracja przełącznika szuflady
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open,
@@ -72,14 +89,14 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Set user info in nav header
+        // Ustawienie informacji o użytkowniku w nagłówku nawigacji
         View headerView = navigationView.getHeaderView(0);
         TextView navUsername = headerView.findViewById(R.id.nav_header_username);
         if (authManager.getCurrentUser() != null) {
             navUsername.setText(authManager.getCurrentUser().getEmail());
         }
 
-        // Start with dashboard fragment
+        // Ustawienie domyślnego fragmentu (DashboardFragment)
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new DashboardFragment())
@@ -89,11 +106,18 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         }
     }
 
+    /**
+     * Obsługuje wybór elementów z menu nawigacyjnego.
+     *
+     * @param item Wybrany element menu.
+     * @return Zwraca true, jeśli zdarzenie zostało obsłużone, w przeciwnym razie false.
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment fragment = null;
         int itemId = item.getItemId();
 
+        // Obsługa wyboru poszczególnych elementów menu
         if (itemId == R.id.nav_dashboard) {
             fragment = new DashboardFragment();
             setTitle(R.string.menu_dashboard);
@@ -112,22 +136,30 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         } else if (itemId == R.id.nav_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
         } else if (itemId == R.id.nav_logout) {
+            // Wylogowanie użytkownika
             authManager.logoutUser(this);
             authManager.clearUserSession(this);
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return true;
         }
+
+        // Zastąpienie fragmentu, jeśli został wybrany
         if (fragment != null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, fragment)
                     .commit();
         }
 
+        // Zamknięcie szuflady nawigacyjnej
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
 
+    /**
+     * Obsługuje naciśnięcie przycisku "wstecz".
+     * Jeśli szuflada nawigacyjna jest otwarta, zamyka ją, w przeciwnym razie wywołuje domyślne zachowanie.
+     */
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {

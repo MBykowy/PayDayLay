@@ -26,10 +26,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Fragment odpowiedzialny za wyświetlanie pulpitu użytkownika.
+ * Wyświetla aktualny bilans oraz listę ostatnich transakcji.
+ * Umożliwia dodawanie nowych transakcji.
+ */
 public class DashboardFragment extends Fragment {
 
     private TextView textBalance;
@@ -44,26 +48,34 @@ public class DashboardFragment extends Fragment {
 
     private NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.getDefault());
 
+    /**
+     * Tworzy widok fragmentu.
+     *
+     * @param inflater  Obiekt LayoutInflater do tworzenia widoków.
+     * @param container Kontener, w którym znajduje się fragment.
+     * @param savedInstanceState Zapisany stan fragmentu.
+     * @return Widok fragmentu.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-        // Initialize views
+        // Inicjalizacja widoków
         textBalance = view.findViewById(R.id.text_balance);
         recyclerRecentTransactions = view.findViewById(R.id.recycler_recent_transactions);
         fabAddTransaction = view.findViewById(R.id.fab_add_transaction);
 
-        // Initialize managers
+        // Inicjalizacja menedżerów
         databaseManager = new DatabaseManager();
         authManager = new AuthManager();
 
-        // Setup RecyclerView
+        // Konfiguracja RecyclerView
         recyclerRecentTransactions.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new TransactionAdapter(getContext(), recentTransactions, categories);
         recyclerRecentTransactions.setAdapter(adapter);
 
-        // Setup FAB
+        // Konfiguracja FAB
         fabAddTransaction.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), TransactionActivity.class);
             startActivity(intent);
@@ -72,35 +84,42 @@ public class DashboardFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Wywoływane po wznowieniu fragmentu.
+     * Ładuje dane do wyświetlenia na pulpicie.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadData();
     }
 
+    /**
+     * Ładuje dane użytkownika, w tym kategorie i transakcje.
+     */
     private void loadData() {
         if (getActivity() == null) return;
 
         String userId = authManager.getCurrentUserId();
         if (userId == null) return;
 
-        // First load categories
+        // Najpierw ładuje kategorie
         databaseManager.getCategories(userId, new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
             public void onCategoriesLoaded(List<Category> loadedCategories) {
                 categories = loadedCategories;
 
-                // Then load transactions
+                // Następnie ładuje transakcje
                 databaseManager.getTransactions(userId, new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> loadedTransactions) {
                         if (getActivity() == null) return;
 
-                        // Calculate balance
+                        // Oblicza bilans
                         double balance = calculateBalance(loadedTransactions);
                         textBalance.setText(currencyFormat.format(balance));
 
-                        // Get recent transactions (up to 5)
+                        // Pobiera ostatnie transakcje (do 5)
                         recentTransactions = getRecentTransactions(loadedTransactions, 5);
                         adapter.updateData(recentTransactions, categories);
                     }
@@ -121,6 +140,12 @@ public class DashboardFragment extends Fragment {
         });
     }
 
+    /**
+     * Oblicza bilans na podstawie listy transakcji.
+     *
+     * @param transactions Lista transakcji.
+     * @return Obliczony bilans.
+     */
     private double calculateBalance(List<Transaction> transactions) {
         double balance = 0;
         for (Transaction transaction : transactions) {
@@ -133,13 +158,20 @@ public class DashboardFragment extends Fragment {
         return balance;
     }
 
+    /**
+     * Pobiera ostatnie transakcje z listy.
+     *
+     * @param allTransactions Lista wszystkich transakcji.
+     * @param limit Maksymalna liczba transakcji do zwrócenia.
+     * @return Lista ostatnich transakcji.
+     */
     private List<Transaction> getRecentTransactions(List<Transaction> allTransactions, int limit) {
         List<Transaction> sorted = new ArrayList<>(allTransactions);
 
-        // Sort by date (newest first)
+        // Sortuje transakcje według daty (od najnowszych)
         Collections.sort(sorted, (t1, t2) -> t2.getDate().compareTo(t1.getDate()));
 
-        // Return only the specified number of transactions
+        // Zwraca tylko określoną liczbę transakcji
         if (sorted.size() <= limit) {
             return sorted;
         } else {
@@ -147,6 +179,11 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    /**
+     * Wyświetla komunikat o błędzie.
+     *
+     * @param message Treść komunikatu błędu.
+     */
     private void showError(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
     }

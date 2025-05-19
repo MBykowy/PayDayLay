@@ -20,22 +20,52 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * Klasa odpowiedzialna za eksportowanie wykresów do plików PDF.
+ * Umożliwia zapisanie wykresów w formacie PDF w katalogu aplikacji lub w katalogu Pobrane.
+ */
 public class PdfExporter {
     private static final String TAG = "PdfExporter";
     private final Context context;
 
+    /**
+     * Konstruktor klasy PdfExporter.
+     *
+     * @param context Kontekst aplikacji.
+     */
     public PdfExporter(Context context) {
         this.context = context;
     }
 
+    /**
+     * Interfejs do obsługi zdarzeń eksportu PDF.
+     */
     public interface OnPdfExportListener {
+        /**
+         * Wywoływane po pomyślnym eksporcie pliku PDF.
+         *
+         * @param filePath Ścieżka do zapisanego pliku PDF.
+         */
         void onSuccess(String filePath);
+
+        /**
+         * Wywoływane w przypadku błędu podczas eksportu.
+         *
+         * @param e Wyjątek opisujący błąd.
+         */
         void onError(Exception e);
     }
 
+    /**
+     * Eksportuje wykres do pliku PDF.
+     *
+     * @param chart      Obiekt wykresu do eksportu.
+     * @param chartTitle Tytuł wykresu, który zostanie umieszczony w pliku PDF.
+     * @param listener   Słuchacz zdarzeń eksportu.
+     */
     public void exportChart(Chart chart, String chartTitle, OnPdfExportListener listener) {
         try {
-            // Use the app's private directory or Downloads directory
+            // Ustawia katalog zapisu pliku PDF
             File directory;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 directory = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "PaydayLay");
@@ -44,108 +74,114 @@ public class PdfExporter {
                         Environment.DIRECTORY_DOWNLOADS), "PaydayLay");
             }
 
-            Log.d(TAG, "Storage directory path: " + directory.getAbsolutePath());
+            Log.d(TAG, "Ścieżka katalogu: " + directory.getAbsolutePath());
 
             if (!directory.exists()) {
                 boolean created = directory.mkdirs();
-                Log.d(TAG, "Directory created: " + created);
+                Log.d(TAG, "Katalog utworzony: " + created);
                 if (!created) {
-                    throw new IOException("Failed to create directory");
+                    throw new IOException("Nie udało się utworzyć katalogu");
                 }
             }
 
-            // Generate filename with timestamp
+            // Generuje nazwę pliku z sygnaturą czasową
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
             String fileName = "chart_" + timestamp + ".pdf";
             File file = new File(directory, fileName);
 
-            Log.d(TAG, "Creating file: " + file.getAbsolutePath());
+            Log.d(TAG, "Tworzenie pliku: " + file.getAbsolutePath());
 
-            // Create PDF document
+            // Tworzy dokument PDF
             PdfDocument document = new PdfDocument();
 
-            // Get chart bitmap
+            // Pobiera bitmapę wykresu
             Bitmap chartBitmap = getChartBitmap(chart);
             if (chartBitmap == null) {
-                throw new IOException("Failed to render chart bitmap");
+                throw new IOException("Nie udało się wygenerować bitmapy wykresu");
             }
 
-            // Create PDF page with some padding
+            // Tworzy stronę PDF z marginesami
             int padding = 50;
             PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
                     chartBitmap.getWidth() + padding * 2,
-                    chartBitmap.getHeight() + padding * 2 + 80, // Extra space for title
+                    chartBitmap.getHeight() + padding * 2 + 80, // Dodatkowe miejsce na tytuł
                     1).create();
 
             PdfDocument.Page page = document.startPage(pageInfo);
 
-            // Draw chart on page with padding
+            // Rysuje zawartość strony
             Canvas canvas = page.getCanvas();
 
-            // Fill background
+            // Wypełnia tło
             canvas.drawColor(Color.WHITE);
 
-            // Draw title
+            // Rysuje tytuł
             android.graphics.Paint titlePaint = new android.graphics.Paint();
             titlePaint.setColor(Color.BLACK);
             titlePaint.setTextSize(30);
             canvas.drawText(chartTitle, padding, 60, titlePaint);
 
-            // Draw chart
+            // Rysuje wykres
             canvas.drawBitmap(chartBitmap, padding, padding + 80, null);
 
-            // Finish page
+            // Kończy stronę
             document.finishPage(page);
 
-            // Write to file
+            // Zapisuje dokument do pliku
             FileOutputStream fos = new FileOutputStream(file);
             document.writeTo(fos);
             document.close();
             fos.close();
 
-            Log.d(TAG, "PDF file saved: " + file.getAbsolutePath());
+            Log.d(TAG, "Plik PDF zapisany: " + file.getAbsolutePath());
 
-            // Success callback
+            // Wywołuje callback sukcesu
             listener.onSuccess(file.getAbsolutePath());
 
         } catch (Exception e) {
-            Log.e(TAG, "Error exporting PDF", e);
+            Log.e(TAG, "Błąd podczas eksportu PDF", e);
             listener.onError(e);
         }
     }
 
+    /**
+     * Generuje bitmapę z wykresu.
+     *
+     * @param chart Obiekt wykresu.
+     * @return Bitmapa wykresu.
+     */
     private Bitmap getChartBitmap(Chart chart) {
-        // Ensure the chart is fully rendered
+        // Upewnia się, że wykres jest w pełni wyrenderowany
         if (chart instanceof PieChart) {
             ((PieChart) chart).invalidate();
         } else if (chart instanceof BarChart) {
             ((BarChart) chart).invalidate();
         }
 
-        // Get chart dimensions
+        // Pobiera wymiary wykresu
         int width = chart.getWidth();
         int height = chart.getHeight();
 
         if (width <= 0 || height <= 0) {
-            // Use sensible defaults for unrendered charts
+            // Ustawia domyślne wymiary dla niewyrenderowanych wykresów
             width = 1200;
             height = 800;
 
-            // Force measure and layout
+            // Wymusza pomiar i układ
             chart.measure(
                     View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
             chart.layout(0, 0, width, height);
         }
 
-        // Create bitmap with appropriate configuration
+        // Tworzy bitmapę z odpowiednią konfiguracją
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
 
-        // Draw chart background
+        // Rysuje tło wykresu
         canvas.drawColor(Color.WHITE);
 
-        // Draw the chart
+        // Rysuje wykres
         chart.draw(canvas);
 
         return bitmap;

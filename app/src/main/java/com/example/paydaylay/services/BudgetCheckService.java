@@ -19,11 +19,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Usługa odpowiedzialna za sprawdzanie budżetów użytkownika.
+ * Analizuje transakcje w ramach budżetów i powiadamia użytkownika, jeśli limit budżetu został przekroczony.
+ */
 public class BudgetCheckService extends Service {
 
     private AuthManager authManager;
     private DatabaseManager databaseManager;
 
+    /**
+     * Wywoływane podczas tworzenia usługi.
+     * Inicjalizuje menedżery Firebase.
+     */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -31,18 +39,36 @@ public class BudgetCheckService extends Service {
         databaseManager = new DatabaseManager();
     }
 
+    /**
+     * Wywoływane po uruchomieniu usługi.
+     * Rozpoczyna proces sprawdzania budżetów.
+     *
+     * @param intent  Obiekt Intent przekazany do usługi.
+     * @param flags   Flagi określające sposób uruchomienia usługi.
+     * @param startId Identyfikator startu usługi.
+     * @return Kod określający sposób ponownego uruchamiania usługi.
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         checkBudgets();
         return START_NOT_STICKY;
     }
 
+    /**
+     * Wywoływane, gdy usługa jest powiązana z komponentem.
+     *
+     * @param intent Obiekt Intent przekazany do usługi.
+     * @return Obiekt IBinder do komunikacji z usługą.
+     */
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
+    /**
+     * Sprawdza budżety użytkownika i analizuje transakcje w ich ramach.
+     */
     private void checkBudgets() {
         String userId = authManager.getCurrentUserId();
         if (userId == null) {
@@ -50,21 +76,19 @@ public class BudgetCheckService extends Service {
             return;
         }
 
-        // First, load all categories for this user
+        // Pobiera kategorie użytkownika
         databaseManager.getCategories(userId, new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
             public void onCategoriesLoaded(List<Category> categories) {
-                // Create a map for quick lookup
                 Map<String, Category> categoryMap = new HashMap<>();
                 for (Category category : categories) {
                     categoryMap.put(category.getId(), category);
                 }
 
-                // Then, load all budgets
+                // Pobiera budżety użytkownika
                 databaseManager.getBudgets(userId, new DatabaseManager.OnBudgetsLoadedListener() {
                     @Override
                     public void onBudgetsLoaded(List<Budget> budgets) {
-                        // For each budget, load relevant transactions
                         for (Budget budget : budgets) {
                             loadTransactionsForBudget(budget, categoryMap);
                         }
@@ -84,8 +108,13 @@ public class BudgetCheckService extends Service {
         });
     }
 
+    /**
+     * Ładuje transakcje dla danego budżetu i sprawdza, czy limit został przekroczony.
+     *
+     * @param budget      Obiekt budżetu.
+     * @param categoryMap Mapa kategorii użytkownika.
+     */
     private void loadTransactionsForBudget(Budget budget, Map<String, Category> categoryMap) {
-        // Calculate date range for this budget period
         Date startDate = new Date(budget.getPeriodStartDate());
         Calendar endCalendar = Calendar.getInstance();
         endCalendar.setTimeInMillis(budget.getPeriodStartDate());
@@ -106,7 +135,6 @@ public class BudgetCheckService extends Service {
         }
         Date endDate = endCalendar.getTime();
 
-        // Query transactions for this budget
         databaseManager.getTransactionsForBudget(
                 authManager.getCurrentUserId(),
                 budget.getCategoryId(),
@@ -115,7 +143,6 @@ public class BudgetCheckService extends Service {
                 new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> transactions) {
-                        // Calculate total spending for this period
                         double totalSpending = 0;
                         for (Transaction transaction : transactions) {
                             if (transaction.isExpense()) {
@@ -123,7 +150,6 @@ public class BudgetCheckService extends Service {
                             }
                         }
 
-                        // Check if budget limit is exceeded
                         if (totalSpending > budget.getLimit()) {
                             NotificationUtils.showBudgetAlertNotification(
                                     BudgetCheckService.this,
@@ -132,21 +158,21 @@ public class BudgetCheckService extends Service {
                                     categoryMap);
                         }
 
-                        // Check if this was the last budget to process
                         checkIfAllBudgetsProcessed();
                     }
 
                     @Override
                     public void onError(Exception e) {
-                        // Continue with other budgets even if one fails
                         checkIfAllBudgetsProcessed();
                     }
                 });
     }
 
+    /**
+     * Sprawdza, czy wszystkie budżety zostały przetworzone.
+     * (Do implementacji w pełnej wersji aplikacji).
+     */
     private void checkIfAllBudgetsProcessed() {
-        // This would be implemented to track when all budgets are processed
-        // For simplicity, we're not implementing the full tracking mechanism here
-        // In a real app, you would use a counter or similar approach
+        // Mechanizm śledzenia przetworzonych budżetów
     }
 }

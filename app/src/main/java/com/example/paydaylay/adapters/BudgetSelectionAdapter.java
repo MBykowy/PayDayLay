@@ -16,27 +16,59 @@ import com.example.paydaylay.models.Category;
 import java.text.NumberFormat;
 import java.util.List;
 
+/**
+ * Adapter BudgetSelectionAdapter obsługuje wyświetlanie listy budżetów w RecyclerView
+ * w celu ich wyboru przez użytkownika. Umożliwia wyświetlanie szczegółów budżetu,
+ * takich jak kategoria, limit oraz okres.
+ */
 public class BudgetSelectionAdapter extends RecyclerView.Adapter<BudgetSelectionAdapter.BudgetViewHolder> {
 
+    // Kontekst aplikacji
     private final Context context;
+
+    // Lista budżetów i kategorii
     private final List<Budget> budgets;
     private final List<Category> categories;
+
+    // Listener obsługujący wybór budżetu
     private OnBudgetSelectedListener listener;
 
+    /**
+     * Interfejs definiujący akcję po wybraniu budżetu.
+     */
     public interface OnBudgetSelectedListener {
         void onBudgetSelected(Budget budget);
     }
 
+    /**
+     * Konstruktor adaptera.
+     *
+     * @param context Kontekst aplikacji.
+     * @param budgets Lista budżetów do wyświetlenia.
+     * @param categories Lista kategorii powiązanych z budżetami.
+     */
     public BudgetSelectionAdapter(Context context, List<Budget> budgets, List<Category> categories) {
         this.context = context;
         this.budgets = budgets;
         this.categories = categories;
     }
 
+    /**
+     * Ustawia listener obsługujący wybór budżetu.
+     *
+     * @param listener Obiekt implementujący interfejs OnBudgetSelectedListener.
+     */
     public void setOnBudgetSelectedListener(OnBudgetSelectedListener listener) {
         this.listener = listener;
     }
 
+    /**
+     * Tworzy nowy widok dla elementu RecyclerView.
+     *
+     * @param parent Rodzic widoku.
+     * @param viewType Typ widoku.
+     * @return Obiekt BudgetViewHolder.
+     */
     @NonNull
     @Override
     public BudgetViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -44,6 +76,12 @@ public class BudgetSelectionAdapter extends RecyclerView.Adapter<BudgetSelection
         return new BudgetViewHolder(view);
     }
 
+    /**
+     * Wiąże dane budżetu z widokiem.
+     *
+     * @param holder Obiekt BudgetViewHolder.
+     * @param position Pozycja elementu w liście.
+     */
     @Override
     public void onBindViewHolder(@NonNull BudgetViewHolder holder, int position) {
         Budget budget = budgets.get(position);
@@ -92,11 +130,19 @@ public class BudgetSelectionAdapter extends RecyclerView.Adapter<BudgetSelection
         });
     }
 
+    /**
+     * Zwraca liczbę elementów w liście.
+     *
+     * @return Liczba elementów.
+     */
     @Override
     public int getItemCount() {
         return budgets.size();
     }
 
+    /**
+     * Klasa BudgetViewHolder przechowuje widoki dla elementu budżetu.
+     */
     static class BudgetViewHolder extends RecyclerView.ViewHolder {
         TextView textViewCategory;
         TextView textViewAmount;

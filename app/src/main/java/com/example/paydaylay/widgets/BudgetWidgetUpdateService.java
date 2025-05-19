@@ -20,20 +20,39 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Serwis odpowiedzialny za aktualizację danych widżetów budżetowych.
+ * Pobiera dane budżetów z bazy danych i aktualizuje widżety na ekranie głównym.
+ */
 public class BudgetWidgetUpdateService extends JobIntentService {
     private static final String TAG = "WidgetUpdateService";
     private static final int JOB_ID = 1000;
 
+    /**
+     * Dodaje zadanie do kolejki pracy serwisu.
+     *
+     * @param context Kontekst aplikacji.
+     * @param intent  Intencja zawierająca dane do przetworzenia.
+     */
     public static void enqueueWork(Context context, Intent intent) {
         enqueueWork(context, BudgetWidgetUpdateService.class, JOB_ID, intent);
     }
 
+    /**
+     * Obsługuje zadanie serwisu.
+     *
+     * @param intent Intencja zawierająca dane do przetworzenia.
+     */
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
         Log.d(TAG, "Aktualizacja widgetów budżetowych rozpoczęta");
         updateWidgets();
     }
 
+    /**
+     * Aktualizuje dane widżetów budżetowych.
+     * Pobiera budżety z bazy danych, zapisuje je w SharedPreferences i powiadamia widżety o zmianach.
+     */
     private void updateWidgets() {
         AuthManager authManager = new AuthManager();
         String userId = authManager.getCurrentUserId();
@@ -73,6 +92,12 @@ public class BudgetWidgetUpdateService extends JobIntentService {
         });
     }
 
+    /**
+     * Metoda wywoływana przy bindowaniu serwisu.
+     *
+     * @param intent Intencja zawierająca dane do przetworzenia.
+     * @return Zwraca null, ponieważ serwis nie obsługuje bindowania.
+     */
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

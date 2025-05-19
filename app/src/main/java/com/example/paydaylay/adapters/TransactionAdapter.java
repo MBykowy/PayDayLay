@@ -22,6 +22,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Adapter TransactionAdapter obsługuje wyświetlanie listy transakcji w RecyclerView.
+ * Umożliwia użytkownikowi przeglądanie szczegółów transakcji, takich jak opis, kwota,
+ * data oraz kategoria.
+ */
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder> {
 
     private final Context context;
@@ -30,6 +35,13 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
     private final SimpleDateFormat dateFormat;
     private final String currencySymbol;
 
+    /**
+     * Konstruktor adaptera.
+     *
+     * @param context Kontekst aplikacji.
+     * @param transactions Lista transakcji do wyświetlenia.
+     * @param categories Lista kategorii powiązanych z transakcjami.
+     */
     public TransactionAdapter(Context context, List<Transaction> transactions, List<Category> categories) {
         this.context = context;
         this.transactions = transactions;
@@ -37,12 +49,19 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         this.dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         this.currencySymbol = context.getString(R.string.currency_symbol);
 
-        // Create a map of categories for quick lookup
+        // Tworzenie mapy kategorii dla szybkiego dostępu
         for (Category category : categories) {
             categoryMap.put(category.getId(), category);
         }
     }
 
+    /**
+     * Tworzy nowy widok dla elementu RecyclerView.
+     *
+     * @param parent Rodzic widoku.
+     * @param viewType Typ widoku.
+     * @return Obiekt TransactionViewHolder.
+     */
     @NonNull
     @Override
     public TransactionViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -50,19 +69,25 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         return new TransactionViewHolder(view);
     }
 
+    /**
+     * Wiąże dane transakcji z widokiem.
+     *
+     * @param holder Obiekt TransactionViewHolder.
+     * @param position Pozycja elementu w liście.
+     */
     @Override
     public void onBindViewHolder(@NonNull TransactionViewHolder holder, int position) {
         Transaction transaction = transactions.get(position);
         Category category = categoryMap.get(transaction.getCategoryId());
 
-        // Set transaction description
+        // Ustawienie opisu transakcji
         if (transaction.getDescription() != null && !transaction.getDescription().isEmpty()) {
             holder.textViewTransactionDescription.setText(transaction.getDescription());
         } else {
             holder.textViewTransactionDescription.setText(R.string.no_description);
         }
 
-        // Set transaction amount
+        // Ustawienie kwoty transakcji
         String amountText = (transaction.isExpense() ? "- " : "+ ") +
                 String.format(Locale.getDefault(), "%.2f %s",
                         transaction.getAmount(), currencySymbol);
@@ -72,10 +97,10 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
                         context.getResources().getColor(R.color.expense_color) :
                         context.getResources().getColor(R.color.income_color));
 
-        // Set transaction date
+        // Ustawienie daty transakcji
         holder.textViewTransactionDate.setText(dateFormat.format(transaction.getDate()));
 
-        // Set category information
+        // Ustawienie informacji o kategorii
         if (category != null) {
             holder.textViewCategoryName.setText(category.getName());
             holder.viewCategoryColor.setBackgroundColor(category.getColor());
@@ -84,7 +109,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
             holder.viewCategoryColor.setBackgroundColor(Color.GRAY);
         }
 
-        // Set click listener
+        // Ustawienie nasłuchiwacza kliknięcia
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TransactionActivity.class);
             intent.putExtra("transaction", transaction);
@@ -92,11 +117,22 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         });
     }
 
+    /**
+     * Zwraca liczbę elementów w liście.
+     *
+     * @return Liczba elementów.
+     */
     @Override
     public int getItemCount() {
         return transactions.size();
     }
 
+    /**
+     * Aktualizuje dane transakcji i kategorii oraz odświeża widok.
+     *
+     * @param newTransactions Nowa lista transakcji.
+     * @param newCategories Nowa lista kategorii.
+     */
     public void updateData(List<Transaction> newTransactions, List<Category> newCategories) {
         this.transactions.clear();
         this.transactions.addAll(newTransactions);
@@ -109,6 +145,9 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         notifyDataSetChanged();
     }
 
+    /**
+     * Klasa TransactionViewHolder przechowuje widoki dla elementu transakcji.
+     */
     static class TransactionViewHolder extends RecyclerView.ViewHolder {
         View viewCategoryColor;
         TextView textViewTransactionDescription;

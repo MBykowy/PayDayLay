@@ -28,16 +28,24 @@ import com.example.paydaylay.utils.ThemeUtils;
 
 public class SettingsActivity extends BaseActivity {
 
+    // Deklaracje pól dla grup radiowych i przycisków opcji
     private RadioGroup radioGroupTheme, radioGroupLanguage;
     private RadioButton radioSystemTheme, radioLightTheme, radioDarkTheme;
     private RadioButton radioEnglish, radioPolish;
 
+    /**
+     * Metoda wywoływana podczas tworzenia aktywności.
+     * Inicjalizuje widoki, ustawia początkowe wartości dla motywu i języka,
+     * oraz definiuje akcje dla elementów interfejsu użytkownika.
+     *
+     * @param savedInstanceState Zapisany stan aktywności (jeśli istnieje).
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // Set up toolbar with back button
+        // Ustawienie paska narzędzi z przyciskiem powrotu
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -45,25 +53,25 @@ public class SettingsActivity extends BaseActivity {
             getSupportActionBar().setTitle(R.string.settings_title);
         }
 
-        // Initialize theme selection controls
+        // Inicjalizacja elementów wyboru motywu
         radioGroupTheme = findViewById(R.id.radioGroupTheme);
         radioSystemTheme = findViewById(R.id.radioSystemTheme);
         radioLightTheme = findViewById(R.id.radioLightTheme);
         radioDarkTheme = findViewById(R.id.radioDarkTheme);
 
-        // Initialize language selection controls
+        // Inicjalizacja elementów wyboru języka
         radioGroupLanguage = findViewById(R.id.radioGroupLanguage);
         radioEnglish = findViewById(R.id.radioEnglish);
         radioPolish = findViewById(R.id.radioPolish);
 
-        // Set the current theme selection
+        // Ustawienie początkowego wyboru motywu
         setInitialThemeSelection();
 
-        // Set the current language selection
+        // Ustawienie początkowego wyboru języka
         setInitialLanguageSelection();
         setupNotificationSettings();
 
-        // Set listener for theme changes
+        // Ustawienie nasłuchiwacza zmian motywu
         radioGroupTheme.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.radioSystemTheme) {
                 ThemeUtils.saveThemeMode(this, ThemeUtils.MODE_SYSTEM);
@@ -77,6 +85,7 @@ public class SettingsActivity extends BaseActivity {
             }
         });
 
+        // Ustawienie nasłuchiwacza zmian języka
         radioGroupLanguage.setOnCheckedChangeListener((group, checkedId) -> {
             String languageCode;
             if (checkedId == R.id.radioPolish) {
@@ -85,14 +94,17 @@ public class SettingsActivity extends BaseActivity {
                 languageCode = "en";
             }
 
-            // Check if language actually changed
+            // Sprawdzenie, czy język faktycznie się zmienił
             if (!languageCode.equals(LocaleHelper.getLanguage(this))) {
                 LocaleHelper.setLocale(this, languageCode);
-                // The app restart is now handled in the LocaleHelper
+                // Restart aplikacji obsługiwany w LocaleHelper
             }
         });
     }
 
+    /**
+     * Ustawia początkowy wybór motywu na podstawie zapisanych preferencji.
+     */
     private void setInitialThemeSelection() {
         int currentThemeMode = ThemeUtils.getThemeMode(this);
         switch (currentThemeMode) {
@@ -108,6 +120,9 @@ public class SettingsActivity extends BaseActivity {
         }
     }
 
+    /**
+     * Ustawia początkowy wybór języka na podstawie zapisanych preferencji.
+     */
     private void setInitialLanguageSelection() {
         String currentLanguage = LocaleHelper.getLanguage(this);
         if ("pl".equals(currentLanguage)) {
@@ -117,6 +132,12 @@ public class SettingsActivity extends BaseActivity {
         }
     }
 
+    /**
+     * Obsługuje wybór elementów menu.
+     *
+     * @param item Wybrany element menu.
+     * @return Zwraca true, jeśli zdarzenie zostało obsłużone, w przeciwnym razie false.
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -125,23 +146,28 @@ public class SettingsActivity extends BaseActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-    // Add to SettingsActivity.java
+
+    // Deklaracje pól dla ustawień powiadomień
     private Switch switchNotifications;
     private Button buttonCustomizeNotifications;
 
+    /**
+     * Inicjalizuje ustawienia powiadomień, w tym przełącznik włączania/wyłączania
+     * oraz przycisk dostosowywania powiadomień.
+     */
     private void setupNotificationSettings() {
         switchNotifications = findViewById(R.id.switchNotifications);
         buttonCustomizeNotifications = findViewById(R.id.buttonCustomizeNotifications);
 
-        // Set initial state
+        // Ustawienie początkowego stanu
         switchNotifications.setChecked(NotificationUtils.areNotificationsEnabled(this));
 
-        // Set listener
+        // Ustawienie nasłuchiwacza dla przełącznika
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
             NotificationUtils.setNotificationsEnabled(this, isChecked);
             buttonCustomizeNotifications.setEnabled(isChecked);
 
-            // Schedule or cancel budget check alarms
+            // Planowanie lub anulowanie alarmów budżetowych
             if (isChecked) {
                 BudgetAlarmScheduler.scheduleBudgetCheck(this);
             } else {
@@ -149,26 +175,30 @@ public class SettingsActivity extends BaseActivity {
             }
         });
 
-        // Setup customize button
+        // Ustawienie przycisku dostosowywania
         buttonCustomizeNotifications.setEnabled(switchNotifications.isChecked());
         buttonCustomizeNotifications.setOnClickListener(v -> {
             showNotificationCustomizationDialog();
         });
     }
 
+    /**
+     * Wyświetla okno dialogowe do dostosowywania ustawień powiadomień,
+     * takich jak dźwięk i wibracje.
+     */
     private void showNotificationCustomizationDialog() {
-        // Create dialog for notification sound and vibration settings
+        // Tworzenie okna dialogowego dla ustawień dźwięku i wibracji
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View customView = getLayoutInflater().inflate(R.layout.dialog_notification_settings, null);
 
         Switch switchVibration = customView.findViewById(R.id.switchVibration);
         Button buttonSelectSound = customView.findViewById(R.id.buttonSelectSound);
 
-        // Set initial state
+        // Ustawienie początkowego stanu
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         switchVibration.setChecked(prefs.getBoolean("notification_vibration", true));
 
-        // Setup sound selection
+        // Ustawienie wyboru dźwięku
         buttonSelectSound.setOnClickListener(v -> {
             Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
             intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
@@ -182,12 +212,12 @@ public class SettingsActivity extends BaseActivity {
         builder.setTitle(R.string.customize_notifications)
                 .setView(customView)
                 .setPositiveButton(R.string.save, (dialog, which) -> {
-                    // Save preferences
+                    // Zapisanie preferencji
                     prefs.edit()
                             .putBoolean("notification_vibration", switchVibration.isChecked())
                             .apply();
 
-                    // Recreate notification channels for Android O+
+                    // Ponowne tworzenie kanałów powiadomień dla Androida O+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         NotificationUtils.createNotificationChannels(this);
                     }
@@ -196,6 +226,13 @@ public class SettingsActivity extends BaseActivity {
                 .show();
     }
 
+    /**
+     * Obsługuje wynik aktywności, np. wybór dźwięku powiadomienia.
+     *
+     * @param requestCode Kod żądania.
+     * @param resultCode Kod wyniku.
+     * @param data Dane zwrócone przez aktywność.
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -208,7 +245,7 @@ public class SettingsActivity extends BaseActivity {
                         .putString("custom_notification_sound", uri.toString())
                         .apply();
 
-                // Recreate notification channels for Android O+
+                // Ponowne tworzenie kanałów powiadomień dla Androida O+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     NotificationUtils.createNotificationChannels(this);
                 }

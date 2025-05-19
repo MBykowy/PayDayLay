@@ -50,6 +50,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Fragment odpowiedzialny za wyświetlanie wykresów transakcji użytkownika.
+ * Obsługuje wykresy kołowe dla wydatków i przychodów oraz wykres słupkowy dla podsumowania miesięcznego.
+ * Umożliwia eksport wykresów do pliku PDF.
+ */
 public class ChartsFragment extends Fragment {
 
     private static final String TAG = "ChartsFragment";
@@ -69,42 +74,55 @@ public class ChartsFragment extends Fragment {
     private List<Transaction> transactions = new ArrayList<>();
     private Map<String, Category> categoryMap = new HashMap<>();
 
+    /**
+     * Wywoływane podczas tworzenia fragmentu.
+     * Ustawia, że fragment ma własne menu opcji.
+     *
+     * @param savedInstanceState Zapisany stan fragmentu.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "ChartsFragment onCreate - Setting has options menu to true");
         setHasOptionsMenu(true);
     }
 
+    /**
+     * Tworzy widok fragmentu.
+     *
+     * @param inflater  Obiekt LayoutInflater do tworzenia widoków.
+     * @param container Kontener, w którym znajduje się fragment.
+     * @param savedInstanceState Zapisany stan fragmentu.
+     * @return Widok fragmentu.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_charts, container, false);
 
-        // Initialize managers
+        // Inicjalizacja menedżerów
         databaseManager = new DatabaseManager();
         authManager = new AuthManager();
 
-        // Initialize views
+        // Inicjalizacja widoków
         pieChart = view.findViewById(R.id.pieChart);
         barChart = view.findViewById(R.id.barChart);
         spinnerChartType = view.findViewById(R.id.spinnerChartType);
         spinnerTimeFrame = view.findViewById(R.id.spinnerTimeFrame);
         textViewNoData = view.findViewById(R.id.textViewNoData);
 
-        // Setup chart type spinner
+        // Konfiguracja spinnera typu wykresu
         ArrayAdapter<CharSequence> chartTypeAdapter = ArrayAdapter.createFromResource(
                 requireContext(), R.array.chart_types, android.R.layout.simple_spinner_item);
         chartTypeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerChartType.setAdapter(chartTypeAdapter);
 
-        // Setup time frame spinner
+        // Konfiguracja spinnera zakresu czasowego
         ArrayAdapter<CharSequence> timeFrameAdapter = ArrayAdapter.createFromResource(
                 requireContext(), R.array.time_frames, android.R.layout.simple_spinner_item);
         timeFrameAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerTimeFrame.setAdapter(timeFrameAdapter);
 
-        // Setup spinners listeners
+        // Obsługa wyboru w spinnerach
         spinnerChartType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -129,187 +147,43 @@ public class ChartsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Wywoływane po wznowieniu fragmentu.
+     * Ładuje dane do wykresów.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadData();
     }
 
+    /**
+     * Aktualizuje widoczność wykresów w zależności od wybranego typu.
+     *
+     * @param chartTypePosition Pozycja wybranego typu wykresu.
+     */
     private void updateChartVisibility(int chartTypePosition) {
         switch (chartTypePosition) {
-            case CHART_TYPE_EXPENSES:  // Expenses Pie Chart
-            case CHART_TYPE_INCOME:    // Income Pie Chart
+            case CHART_TYPE_EXPENSES:  // Wykres kołowy wydatków
+            case CHART_TYPE_INCOME:    // Wykres kołowy przychodów
                 pieChart.setVisibility(View.VISIBLE);
                 barChart.setVisibility(View.GONE);
                 break;
-            case CHART_TYPE_MONTHLY:   // Bar Chart
+            case CHART_TYPE_MONTHLY:   // Wykres słupkowy
                 pieChart.setVisibility(View.GONE);
                 barChart.setVisibility(View.VISIBLE);
                 break;
         }
     }
 
-    private void updateCharts() {
-        if (!isAdded()) {
-            return; // Przerwij jeśli fragment nie jest już dołączony
-        }
-        if (transactions.isEmpty()) {
-            showNoDataMessage();
-            return;
-        }
-
-        hideNoDataMessage();
-
-        int chartType = spinnerChartType.getSelectedItemPosition();
-        switch (chartType) {
-            case CHART_TYPE_EXPENSES:
-                updatePieChart(true); // Show expenses
-                break;
-            case CHART_TYPE_INCOME:
-                updatePieChart(false); // Show income
-                break;
-            case CHART_TYPE_MONTHLY:
-                updateBarChart();
-                break;
-        }
-    }
-
-    private void updatePieChart(boolean showExpenses) {
-        if (!isAdded()) {
-            return; // Przerwij jeśli fragment nie jest już dołączony
-        }
-        // Aggregate data by category
-        Map<String, Float> categoryTotals = new HashMap<>();
-        Map<String, Integer> categoryColors = new HashMap<>();
-
-        for (Transaction transaction : transactions) {
-            // Filter transactions based on type (expense or income)
-            if (transaction.isExpense() == showExpenses) {
-                String categoryId = transaction.getCategoryId();
-                Category category = categoryMap.get(categoryId);
-                String categoryName = category != null ? category.getName() : getString(R.string.unknown_category);
-
-                // Update totals
-                float currentTotal = categoryTotals.containsKey(categoryName) ?
-                        categoryTotals.get(categoryName) : 0f;
-                categoryTotals.put(categoryName, currentTotal + (float)transaction.getAmount());
-
-                // Store category color if available
-                if (category != null) {
-                    categoryColors.put(categoryName, category.getColor());
-                }
-            }
-        }
-
-        // Create pie chart entries
-        List<PieEntry> pieEntries = new ArrayList<>();
-        List<Integer> colors = new ArrayList<>();
-
-        for (Map.Entry<String, Float> entry : categoryTotals.entrySet()) {
-            pieEntries.add(new PieEntry(entry.getValue(), entry.getKey()));
-
-            // Use category color or default
-            if (categoryColors.containsKey(entry.getKey())) {
-                colors.add(categoryColors.get(entry.getKey()));
-            } else {
-                colors.add(ColorTemplate.COLORFUL_COLORS[colors.size() % ColorTemplate.COLORFUL_COLORS.length]);
-            }
-        }
-
-        // Show message if no data for this chart type
-        if (pieEntries.isEmpty()) {
-            textViewNoData.setVisibility(View.VISIBLE);
-            pieChart.setVisibility(View.GONE);
-            return;
-        }
-
-        // Configure pie chart
-        PieDataSet dataSet = new PieDataSet(pieEntries, "");
-        dataSet.setColors(colors);
-        dataSet.setValueTextSize(12f);
-        dataSet.setValueTextColor(android.graphics.Color.WHITE);
-
-        PieData data = new PieData(dataSet);
-        data.setValueFormatter(new com.github.mikephil.charting.formatter.PercentFormatter(pieChart));
-
-        pieChart.setData(data);
-        pieChart.setUsePercentValues(true);
-        pieChart.setDrawHoleEnabled(true);
-        pieChart.setEntryLabelTextSize(12f);
-        pieChart.setEntryLabelColor(android.graphics.Color.WHITE);
-
-        Description description = new Description();
-        description.setText(showExpenses ?
-                getString(R.string.expenses_by_category) :
-                getString(R.string.income_by_category));
-        description.setTextSize(14f);
-        pieChart.setDescription(description);
-
-        pieChart.invalidate(); // Refresh
-    }
-
-    private void updateBarChart() {
-        // Aggregate monthly data for expenses and income
-        Map<Integer, Float> monthlyExpenses = new HashMap<>();
-        Map<Integer, Float> monthlyIncome = new HashMap<>();
-
-        Calendar calendar = Calendar.getInstance();
-
-        for (Transaction transaction : transactions) {
-            calendar.setTime(transaction.getDate());
-            int month = calendar.get(Calendar.MONTH);
-
-            if (transaction.isExpense()) {
-                float current = monthlyExpenses.containsKey(month) ? monthlyExpenses.get(month) : 0f;
-                monthlyExpenses.put(month, current + (float)transaction.getAmount());
-            } else {
-                float current = monthlyIncome.containsKey(month) ? monthlyIncome.get(month) : 0f;
-                monthlyIncome.put(month, current + (float)transaction.getAmount());
-            }
-        }
-
-        // Create bar entries
-        List<BarEntry> expenseEntries = new ArrayList<>();
-        List<BarEntry> incomeEntries = new ArrayList<>();
-
-        for (int i = 0; i < 12; i++) {
-            float expense = monthlyExpenses.containsKey(i) ? monthlyExpenses.get(i) : 0f;
-            float income = monthlyIncome.containsKey(i) ? monthlyIncome.get(i) : 0f;
-
-            expenseEntries.add(new BarEntry(i, expense));
-            incomeEntries.add(new BarEntry(i, income));
-        }
-
-        // Create datasets
-        BarDataSet expenseDataSet = new BarDataSet(expenseEntries, getString(R.string.expenses));
-        expenseDataSet.setColor(getResources().getColor(R.color.expense_color));
-
-        BarDataSet incomeDataSet = new BarDataSet(incomeEntries, getString(R.string.income));
-        incomeDataSet.setColor(getResources().getColor(R.color.income_color));
-
-        BarData barData = new BarData(expenseDataSet, incomeDataSet);
-
-        // Configure bar chart
-        barChart.setData(barData);
-        barChart.getDescription().setText(getString(R.string.monthly_summary));
-
-        // Set X axis labels to month names
-        String[] months = getResources().getStringArray(R.array.months);
-        XAxis xAxis = barChart.getXAxis();
-        xAxis.setValueFormatter(new IndexAxisValueFormatter(months));
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setGranularity(1f);
-        xAxis.setLabelRotationAngle(45);
-
-        barChart.setFitBars(true);
-        barChart.invalidate(); // Refresh
-    }
-
+    /**
+     * Ładuje dane do wykresów z bazy danych.
+     */
     private void loadData() {
         String userId = authManager.getCurrentUserId();
         if (userId == null) return;
 
-        // First load categories
+        // Najpierw ładuje kategorie
         databaseManager.getCategories(userId, new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
             public void onCategoriesLoaded(List<Category> loadedCategories) {
@@ -319,7 +193,7 @@ public class ChartsFragment extends Fragment {
                     categoryMap.put(category.getId(), category);
                 }
 
-                // Then load transactions
+                // Następnie ładuje transakcje
                 databaseManager.getTransactions(userId, new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> loadedTransactions) {
@@ -344,6 +218,12 @@ public class ChartsFragment extends Fragment {
         });
     }
 
+    /**
+     * Filtruje transakcje według wybranego zakresu czasowego.
+     *
+     * @param allTransactions Lista wszystkich transakcji.
+     * @return Lista przefiltrowanych transakcji.
+     */
     private List<Transaction> filterTransactionsByTimeFrame(List<Transaction> allTransactions) {
         if (allTransactions == null || allTransactions.isEmpty()) {
             return new ArrayList<>();
@@ -355,29 +235,29 @@ public class ChartsFragment extends Fragment {
 
         int timeFramePosition = spinnerTimeFrame.getSelectedItemPosition();
 
-        // Reset to start of day
+        // Resetuje do początku dnia
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
 
         switch (timeFramePosition) {
-            case 0: // This week
+            case 0: // Ten tydzień
                 calendar.set(Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek());
                 break;
-            case 1: // This month
+            case 1: // Ten miesiąc
                 calendar.set(Calendar.DAY_OF_MONTH, 1);
                 break;
-            case 2: // Last 3 months
+            case 2: // Ostatnie 3 miesiące
                 calendar.add(Calendar.MONTH, -3);
                 break;
-            case 3: // Last 6 months
+            case 3: // Ostatnie 6 miesięcy
                 calendar.add(Calendar.MONTH, -6);
                 break;
-            case 4: // This year
+            case 4: // Ten rok
                 calendar.set(Calendar.DAY_OF_YEAR, 1);
                 break;
-            case 5: // All time
+            case 5: // Cały czas
                 return new ArrayList<>(allTransactions);
         }
 
@@ -393,175 +273,14 @@ public class ChartsFragment extends Fragment {
         return filtered;
     }
 
-    private void showNoDataMessage() {
-        textViewNoData.setVisibility(View.VISIBLE);
-        pieChart.setVisibility(View.GONE);
-        barChart.setVisibility(View.GONE);
-    }
-
-    private void hideNoDataMessage() {
-        textViewNoData.setVisibility(View.GONE);
-
-        int chartType = spinnerChartType.getSelectedItemPosition();
-        if (chartType == CHART_TYPE_EXPENSES || chartType == CHART_TYPE_INCOME) { // Pie charts
-            pieChart.setVisibility(View.VISIBLE);
-            barChart.setVisibility(View.GONE);
-        } else { // Bar chart
-            pieChart.setVisibility(View.GONE);
-            barChart.setVisibility(View.VISIBLE);
-        }
-    }
-
+    /**
+     * Wyświetla komunikat o błędzie.
+     *
+     * @param message Treść komunikatu błędu.
+     */
     private void showError(String message) {
         if (getActivity() != null) {
             Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        Log.d(TAG, "onCreateOptionsMenu called");
-        inflater.inflate(R.menu.charts_menu, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_export_pdf) {
-            Log.d(TAG, "PDF export button clicked!");
-            exportToPdf();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void exportToPdf() {
-        try {
-            // Get current chart and title
-            int chartType = spinnerChartType.getSelectedItemPosition();
-            Chart chart = chartType == CHART_TYPE_MONTHLY ? barChart : pieChart;
-
-            // Check if chart is visible and has data
-            if (chart.getVisibility() != View.VISIBLE || chart.getData() == null) {
-                Toast.makeText(requireContext(),
-                        "No chart data to export", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String chartTypeText = spinnerChartType.getSelectedItem().toString();
-            String timeFrameText = spinnerTimeFrame.getSelectedItem().toString();
-            String chartTitle = chartTypeText + " - " + timeFrameText;
-
-            Log.d(TAG, "Starting PDF export for chart: " + chartTitle);
-
-            // Show progress dialog
-            ProgressDialog progressDialog = new ProgressDialog(requireContext());
-            progressDialog.setMessage("Exporting PDF...");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-
-            // Export chart
-            PdfExporter pdfExporter = new PdfExporter(requireContext());
-            pdfExporter.exportChart(chart, chartTitle, new PdfExporter.OnPdfExportListener() {
-                @Override
-                public void onSuccess(String filePath) {
-                    if (getActivity() == null) return;
-
-                    progressDialog.dismiss();
-                    Log.d(TAG, "PDF export successful: " + filePath);
-
-                    // Show success dialog with options
-                    showPdfSuccessDialog(filePath);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    if (getActivity() == null) return;
-
-                    progressDialog.dismiss();
-                    Log.e(TAG, "PDF export error", e);
-
-                    Toast.makeText(requireContext(),
-                            "Export Error: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Unexpected error in exportToPdf", e);
-            Toast.makeText(requireContext(),
-                    "Export error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void showPdfSuccessDialog(String filePath) {
-        File pdfFile = new File(filePath);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("PDF Export Successful");
-        builder.setMessage("PDF saved to:\n" + filePath);
-
-        // View option
-        builder.setPositiveButton("View", (dialog, which) -> {
-            openPdfFile(pdfFile);
-        });
-
-        // Share option
-        builder.setNegativeButton("Share", (dialog, which) -> {
-            sharePdfFile(pdfFile);
-        });
-
-        // Close option
-        builder.setNeutralButton("Close", (dialog, which) -> {
-            dialog.dismiss();
-        });
-
-        builder.create().show();
-    }
-
-    private void openPdfFile(File pdfFile) {
-        try {
-            Uri fileUri = FileProvider.getUriForFile(
-                    requireContext(),
-                    requireContext().getPackageName() + ".provider",
-                    pdfFile);
-
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(fileUri, "application/pdf");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            Intent chooser = Intent.createChooser(intent, "Open PDF with...");
-
-            // Verify the intent will resolve to an activity
-            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
-                startActivity(chooser);
-            } else {
-                Toast.makeText(requireContext(),
-                        "No PDF viewer app found", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening PDF file", e);
-            Toast.makeText(requireContext(),
-                    "Error opening PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void sharePdfFile(File pdfFile) {
-        try {
-            Uri fileUri = FileProvider.getUriForFile(
-                    requireContext(),
-                    requireContext().getPackageName() + ".provider",
-                    pdfFile);
-
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("application/pdf");
-            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(Intent.createChooser(shareIntent, "Share PDF"));
-        } catch (Exception e) {
-            Log.e(TAG, "Error sharing PDF file", e);
-            Toast.makeText(requireContext(),
-                    "Error sharing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 }

@@ -28,6 +28,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment odpowiedzialny za zarządzanie kategoriami użytkownika.
+ * Wyświetla listę kategorii, umożliwia ich edytowanie, dodawanie oraz sortowanie.
+ */
 public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCategoryClickListener {
 
     private RecyclerView recyclerViewCategories;
@@ -37,47 +41,71 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
     private AuthManager authManager;
     private FloatingActionButton fabAddCategory;
 
+    /**
+     * Konstruktor domyślny fragmentu CategoriesFragment.
+     */
     public CategoriesFragment() {
-        // Required empty public constructor
+        // Wymagany pusty konstruktor publiczny
     }
 
+    /**
+     * Wywoływane podczas tworzenia fragmentu.
+     * Ustawia, że fragment ma własne menu opcji.
+     *
+     * @param savedInstanceState Zapisany stan fragmentu.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
 
+    /**
+     * Tworzy widok fragmentu.
+     *
+     * @param inflater  Obiekt LayoutInflater do tworzenia widoków.
+     * @param container Kontener, w którym znajduje się fragment.
+     * @param savedInstanceState Zapisany stan fragmentu.
+     * @return Widok fragmentu.
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_categories, container, false);
 
-        // Initialize managers
+        // Inicjalizacja menedżerów
         databaseManager = new DatabaseManager();
         authManager = new AuthManager();
 
-        // Initialize RecyclerView
+        // Inicjalizacja RecyclerView
         recyclerViewCategories = view.findViewById(R.id.recyclerViewCategories);
         recyclerViewCategories.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Initialize adapter
+        // Inicjalizacja adaptera
         categoryAdapter = new CategoryAdapter(getContext(), categories, this);
         recyclerViewCategories.setAdapter(categoryAdapter);
 
-        // Initialize FAB
+        // Inicjalizacja FAB
         fabAddCategory = view.findViewById(R.id.fabAddCategory);
         fabAddCategory.setOnClickListener(v -> openCategoryEditor(null));
 
         return view;
     }
 
+    /**
+     * Wywoływane po wznowieniu fragmentu.
+     * Ładuje listę kategorii.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadCategories();
     }
 
+    /**
+     * Ładuje listę kategorii użytkownika z bazy danych.
+     */
     private void loadCategories() {
         if (getContext() == null || authManager.getCurrentUserId() == null) return;
 
@@ -88,7 +116,7 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
                 categories.addAll(loadedCategories);
                 categoryAdapter.notifyDataSetChanged();
 
-                // Show empty view if no categories
+                // Wyświetla widok pusty, jeśli brak kategorii
                 if (getView() != null) {
                     getView().findViewById(R.id.emptyView).setVisibility(
                             categories.isEmpty() ? View.VISIBLE : View.GONE);
@@ -106,11 +134,22 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
         });
     }
 
+    /**
+     * Obsługuje kliknięcie na kategorię.
+     *
+     * @param category Wybrana kategoria.
+     * @param position Pozycja kategorii na liście.
+     */
     @Override
     public void onCategoryClick(Category category, int position) {
         openCategoryEditor(category);
     }
 
+    /**
+     * Otwiera edytor kategorii.
+     *
+     * @param category Kategoria do edycji lub null, jeśli tworzona jest nowa.
+     */
     private void openCategoryEditor(Category category) {
         Intent intent = new Intent(getContext(), CategoryActivity.class);
         if (category != null) {
@@ -119,12 +158,24 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
         startActivity(intent);
     }
 
+    /**
+     * Tworzy menu opcji dla fragmentu.
+     *
+     * @param menu     Obiekt menu.
+     * @param inflater Obiekt inflatera menu.
+     */
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.categories_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
+    /**
+     * Obsługuje wybór elementu z menu opcji.
+     *
+     * @param item Wybrany element menu.
+     * @return True, jeśli element został obsłużony, w przeciwnym razie false.
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_sort_categories) {
@@ -134,6 +185,9 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Wyświetla dialog sortowania kategorii.
+     */
     private void showSortDialog() {
         String[] sortOptions = {
                 getString(R.string.sort_by_name_asc),
@@ -143,12 +197,12 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle(R.string.sort_categories)
                 .setItems(sortOptions, (dialog, which) -> {
-                    // Sort categories based on selection
+                    // Sortuje kategorie na podstawie wyboru
                     switch (which) {
-                        case 0: // Name ASC
+                        case 0: // Nazwa rosnąco
                             categories.sort((c1, c2) -> c1.getName().compareToIgnoreCase(c2.getName()));
                             break;
-                        case 1: // Name DESC
+                        case 1: // Nazwa malejąco
                             categories.sort((c1, c2) -> c2.getName().compareToIgnoreCase(c1.getName()));
                             break;
                     }

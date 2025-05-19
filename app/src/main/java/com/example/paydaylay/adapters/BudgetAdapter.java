@@ -30,24 +30,45 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * Adapter BudgetAdapter obsługuje wyświetlanie listy budżetów w RecyclerView.
+ * Umożliwia użytkownikowi przeglądanie szczegółów budżetów, takich jak kategoria,
+ * limit, okres, wydatki oraz pozostałe środki.
+ */
 public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetViewHolder> {
 
+    // Lista budżetów i kategorii
     private List<Budget> budgets;
     private List<Category> categories;
+
+    // Mapa kategorii dla szybkiego dostępu
     private Map<String, Category> categoryMap = new HashMap<>();
     private DatabaseManager databaseManager;
 
+    /**
+     * Konstruktor adaptera.
+     *
+     * @param budgets Lista budżetów do wyświetlenia.
+     * @param categories Lista kategorii powiązanych z budżetami.
+     */
     public BudgetAdapter(List<Budget> budgets, List<Category> categories) {
         this.budgets = budgets;
         this.categories = categories;
         this.databaseManager = new DatabaseManager();
 
-        // Create category map for quick lookups
+        // Tworzenie mapy kategorii
         for (Category category : categories) {
             categoryMap.put(category.getId(), category);
         }
     }
 
+    /**
+     * Tworzy nowy widok dla elementu RecyclerView.
+     *
+     * @param parent Rodzic widoku.
+     * @param viewType Typ widoku.
+     * @return Obiekt BudgetViewHolder.
+     */
     @NonNull
     @Override
     public BudgetViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -56,11 +77,17 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         return new BudgetViewHolder(view);
     }
 
+    /**
+     * Wiąże dane budżetu z widokiem.
+     *
+     * @param holder Obiekt BudgetViewHolder.
+     * @param position Pozycja elementu w liście.
+     */
     @Override
     public void onBindViewHolder(@NonNull BudgetViewHolder holder, int position) {
         Budget budget = budgets.get(position);
 
-        // Get category name
+        // Pobieranie nazwy kategorii
         String categoryName;
         if (budget.getCategoryId() == null) {
             categoryName = holder.itemView.getContext().getString(R.string.overall_budget);
@@ -69,11 +96,11 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
             categoryName = category != null ? category.getName() : "Unknown Category";
         }
 
-        // Format amount
+        // Formatowanie limitu
         NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance();
         String formattedLimit = currencyFormatter.format(budget.getLimit());
 
-        // Set period type
+        // Ustawianie typu okresu
         String periodType;
         switch (budget.getPeriodType()) {
             case Budget.PERIOD_DAILY:
@@ -90,12 +117,12 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                 break;
         }
 
-        // Setup view
+        // Ustawianie widoków
         holder.textViewCategory.setText(categoryName);
         holder.textViewLimit.setText(formattedLimit);
         holder.textViewPeriodType.setText(periodType);
 
-        // Calculate date range
+        // Obliczanie zakresu dat
         Date startDate = new Date(budget.getPeriodStartDate());
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd", Locale.getDefault());
 
@@ -120,10 +147,10 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         String dateRange = dateFormat.format(startDate) + " - " + dateFormat.format(endCal.getTime());
         holder.textViewDateRange.setText(dateRange);
 
-        // Load transaction data to show current progress
+        // Ładowanie danych transakcji
         loadTransactionsForBudget(holder, budget);
 
-        // Delete button click
+        // Obsługa przycisku usuwania
         holder.buttonDelete.setOnClickListener(v -> {
             new AlertDialog.Builder(v.getContext())
                     .setTitle("Delete Budget")
@@ -138,7 +165,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                                     notifyItemRemoved(pos);
 
                                     if (budgets.isEmpty()) {
-                                        // Notify fragment to show empty state
+                                        // Powiadomienie o pustym stanie
                                         notifyDataSetChanged();
                                     }
                                 }
@@ -146,7 +173,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
 
                             @Override
                             public void onError(Exception e) {
-                                // Show error message
+                                // Obsługa błędu
                             }
                         });
                     })
@@ -155,12 +182,18 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         });
     }
 
+    /**
+     * Ładuje transakcje dla danego budżetu i aktualizuje widok.
+     *
+     * @param holder Obiekt BudgetViewHolder.
+     * @param budget Obiekt budżetu.
+     */
     private void loadTransactionsForBudget(BudgetViewHolder holder, Budget budget) {
-        // Show loading state
+        // Wyświetlanie stanu ładowania
         holder.progressBar.setProgress(0);
         holder.textViewSpent.setText("Loading...");
 
-        // Get date range
+        // Pobieranie zakresu dat
         Date startDate = new Date(budget.getPeriodStartDate());
         Calendar endCal = Calendar.getInstance();
         endCal.setTimeInMillis(budget.getPeriodStartDate());
@@ -180,7 +213,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                 break;
         }
 
-        // Query transactions
+        // Pobieranie transakcji
         databaseManager.getTransactionsForBudget(
                 budget.getUserId(),
                 budget.getCategoryId(),
@@ -189,7 +222,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                 new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> transactions) {
-                        // Calculate total spending
+                        // Obliczanie całkowitych wydatków
                         double totalSpent = 0;
                         for (Transaction transaction : transactions) {
                             if (transaction.isExpense()) {
@@ -197,12 +230,12 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                             }
                         }
 
-                        // Update UI
+                        // Aktualizacja widoku
                         NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance();
                         String formattedSpent = currencyFormatter.format(totalSpent);
                         String formattedRemaining = currencyFormatter.format(Math.max(0, budget.getLimit() - totalSpent));
 
-                        // Calculate percentage
+                        // Obliczanie procentu
                         int percentage = budget.getLimit() > 0 ?
                                 (int) Math.min(100, (totalSpent / budget.getLimit()) * 100) : 0;
 
@@ -210,16 +243,16 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                         holder.textViewSpent.setText("Spent: " + formattedSpent);
                         holder.textViewRemaining.setText("Remaining: " + formattedRemaining);
 
-                        // Set progress color based on percentage
+                        // Ustawianie koloru paska postępu
                         if (percentage >= 90) {
                             holder.progressBar.setProgressTintList(
-                                    android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red
+                                    android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Czerwony
                         } else if (percentage >= 75) {
                             holder.progressBar.setProgressTintList(
-                                    android.content.res.ColorStateList.valueOf(0xFFFFB74D)); // Orange
+                                    android.content.res.ColorStateList.valueOf(0xFFFFB74D)); // Pomarańczowy
                         } else {
                             holder.progressBar.setProgressTintList(
-                                    android.content.res.ColorStateList.valueOf(0xFF4CAF50)); // Green
+                                    android.content.res.ColorStateList.valueOf(0xFF4CAF50)); // Zielony
                         }
                     }
 
@@ -230,11 +263,19 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
                 });
     }
 
+    /**
+     * Zwraca liczbę elementów w liście.
+     *
+     * @return Liczba elementów.
+     */
     @Override
     public int getItemCount() {
         return budgets.size();
     }
 
+    /**
+     * Klasa BudgetViewHolder przechowuje widoki dla elementu budżetu.
+     */
     static class BudgetViewHolder extends RecyclerView.ViewHolder {
         TextView textViewCategory;
         TextView textViewLimit;

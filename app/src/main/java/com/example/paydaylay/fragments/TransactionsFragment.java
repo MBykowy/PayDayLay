@@ -45,6 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Fragment odpowiedzialny za zarządzanie transakcjami użytkownika.
+ * Wyświetla listę transakcji, umożliwia ich dodawanie oraz eksportowanie do pliku CSV.
+ */
 public class TransactionsFragment extends Fragment {
 
     private RecyclerView recyclerViewTransactions;
@@ -57,43 +61,51 @@ public class TransactionsFragment extends Fragment {
     private List<Category> categories;
     private ProgressBar progressBar;
 
+    /**
+     * Wywoływane podczas tworzenia fragmentu.
+     * Ustawia, że fragment ma własne menu opcji.
+     *
+     * @param savedInstanceState Zapisany stan fragmentu.
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_transactions, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-    }
 
+    /**
+     * Tworzy widok fragmentu.
+     *
+     * @param inflater  Obiekt LayoutInflater do tworzenia widoków.
+     * @param container Kontener, w którym znajduje się fragment.
+     * @param savedInstanceState Zapisany stan fragmentu.
+     * @return Widok fragmentu.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_transactions, container, false);
 
-        // Initialize views
+        // Inicjalizacja widoków
         recyclerViewTransactions = view.findViewById(R.id.recyclerViewTransactions);
         emptyView = view.findViewById(R.id.emptyView);
         fabAddTransaction = view.findViewById(R.id.fabAddTransaction);
-        progressBar = view.findViewById(R.id.progressBar); // Initialize progress bar
+        progressBar = view.findViewById(R.id.progressBar);
 
-
-        // Initialize managers
+        // Inicjalizacja menedżerów
         databaseManager = new DatabaseManager();
         authManager = new AuthManager();
 
-        // Initialize lists
+        // Inicjalizacja list
         transactions = new ArrayList<>();
         categories = new ArrayList<>();
 
-        // Setup RecyclerView
+        // Konfiguracja RecyclerView
         recyclerViewTransactions.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new TransactionAdapter(getContext(), transactions, categories);
         recyclerViewTransactions.setAdapter(adapter);
 
-        // Setup FAB
+        // Konfiguracja FAB
         fabAddTransaction.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), TransactionActivity.class);
             startActivity(intent);
@@ -102,25 +114,32 @@ public class TransactionsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Wywoływane po wznowieniu fragmentu.
+     * Ładuje dane transakcji i kategorii.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadData();
     }
 
+    /**
+     * Ładuje dane użytkownika, w tym kategorie i transakcje.
+     */
     private void loadData() {
         if (getActivity() == null) return;
 
         String userId = authManager.getCurrentUserId();
         if (userId == null) return;
 
-        // First load categories
+        // Najpierw ładuje kategorie
         databaseManager.getCategories(userId, new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
             public void onCategoriesLoaded(List<Category> loadedCategories) {
                 categories = loadedCategories;
 
-                // Then load transactions
+                // Następnie ładuje transakcje
                 databaseManager.getTransactions(userId, new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> loadedTransactions) {
@@ -129,7 +148,7 @@ public class TransactionsFragment extends Fragment {
                         transactions = loadedTransactions;
                         adapter.updateData(transactions, categories);
 
-                        // Show empty view if no transactions
+                        // Wyświetla widok pusty, jeśli brak transakcji
                         if (transactions.isEmpty()) {
                             recyclerViewTransactions.setVisibility(View.GONE);
                             emptyView.setVisibility(View.VISIBLE);
@@ -158,8 +177,25 @@ public class TransactionsFragment extends Fragment {
             }
         });
     }
-    // In TransactionsFragment.java
 
+    /**
+     * Tworzy menu opcji dla fragmentu.
+     *
+     * @param menu     Obiekt menu.
+     * @param inflater Obiekt inflatera menu.
+     */
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_transactions, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    /**
+     * Obsługuje wybór elementu z menu opcji.
+     *
+     * @param item Wybrany element menu.
+     * @return True, jeśli element został obsłużony, w przeciwnym razie false.
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_export_csv) {
@@ -169,16 +205,9 @@ public class TransactionsFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    // Add helper methods to show UI feedback
-    private void showLoading(boolean isLoading) {
-        if (isLoading) {
-            progressBar.setVisibility(View.VISIBLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
-        }
-    }
-
-
+    /**
+     * Wyświetla dialog eksportu transakcji do pliku CSV.
+     */
     private void showExportCsvDialog() {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Export Transactions")
@@ -192,6 +221,12 @@ public class TransactionsFragment extends Fragment {
                 .setNeutralButton("Cancel", null)
                 .show();
     }
+
+    /**
+     * Eksportuje transakcje do pliku CSV.
+     *
+     * @param share True, jeśli plik ma być udostępniony, false, jeśli zapisany lokalnie.
+     */
     private void exportTransactionsToCsv(boolean share) {
         if (transactions.isEmpty()) {
             showMessage("No transactions to export");
@@ -200,7 +235,7 @@ public class TransactionsFragment extends Fragment {
 
         showLoading(true);
 
-        // Get file directory - use Download folder when saving
+        // Pobiera katalog docelowy
         File directory;
         if (share) {
             directory = new File(requireContext().getExternalFilesDir(null), "PayDayLay");
@@ -217,15 +252,15 @@ public class TransactionsFragment extends Fragment {
 
         new Thread(() -> {
             try {
-                // Create CSV file with header and data
+                // Tworzy plik CSV z nagłówkiem i danymi
                 FileWriter fileWriter = new FileWriter(file);
                 CSVWriter csvWriter = new CSVWriter(fileWriter);
 
-                // Write header
+                // Nagłówek
                 String[] header = {"Date", "Amount", "Category", "Description", "Type"};
                 csvWriter.writeNext(header);
 
-                // Write transaction data
+                // Dane transakcji
                 Map<String, String> categoryMap = new HashMap<>();
                 for (Category category : categories) {
                     categoryMap.put(category.getId(), category.getName());
@@ -245,13 +280,12 @@ public class TransactionsFragment extends Fragment {
 
                 csvWriter.close();
 
-                // Share or notify about saved file
+                // Udostępnia lub powiadamia o zapisanym pliku
                 getActivity().runOnUiThread(() -> {
                     showLoading(false);
                     if (share) {
                         shareFile(file);
                     } else {
-                        // Make the file visible in Downloads
                         MediaScannerConnection.scanFile(requireContext(),
                                 new String[]{file.getAbsolutePath()}, null, null);
                         showMessage(getString(R.string.csv_exported_successfully, file.getAbsolutePath()));
@@ -265,6 +299,12 @@ public class TransactionsFragment extends Fragment {
             }
         }).start();
     }
+
+    /**
+     * Udostępnia plik CSV.
+     *
+     * @param file Plik do udostępnienia.
+     */
     private void shareFile(File file) {
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
@@ -276,12 +316,34 @@ public class TransactionsFragment extends Fragment {
         startActivity(Intent.createChooser(shareIntent, "Share CSV file"));
     }
 
-
+    /**
+     * Wyświetla komunikat o błędzie.
+     *
+     * @param message Treść komunikatu błędu.
+     */
     private void showError(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Wyświetla komunikat.
+     *
+     * @param message Treść komunikatu.
+     */
     private void showMessage(String message) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Wyświetla lub ukrywa wskaźnik ładowania.
+     *
+     * @param isLoading True, jeśli wskaźnik ma być widoczny, false w przeciwnym razie.
+     */
+    private void showLoading(boolean isLoading) {
+        if (isLoading) {
+            progressBar.setVisibility(View.VISIBLE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+        }
     }
 }

@@ -20,7 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-// Added correct import for SwipeRefreshLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.paydaylay.R;
@@ -42,6 +41,10 @@ import java.util.List;
 import android.content.Intent;
 import com.example.paydaylay.widgets.BudgetWidgetConfigActivity;
 
+/**
+ * Fragment odpowiedzialny za zarządzanie budżetami użytkownika.
+ * Wyświetla listę budżetów, umożliwia ich dodawanie, edytowanie oraz usuwanie.
+ */
 public class BudgetFragment extends Fragment {
 
     private static final String TAG = "BudgetFragment";
@@ -61,17 +64,25 @@ public class BudgetFragment extends Fragment {
     private AuthManager authManager;
     private BudgetAlarmScheduler alarmScheduler;
 
+    /**
+     * Tworzy widok fragmentu.
+     *
+     * @param inflater  Obiekt LayoutInflater do tworzenia widoków.
+     * @param container Kontener, w którym znajduje się fragment.
+     * @param savedInstanceState Zapisany stan fragmentu.
+     * @return Widok fragmentu.
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_budgets, container, false);
 
-        // Initialize managers
+        // Inicjalizacja menedżerów
         databaseManager = new DatabaseManager();
         authManager = new AuthManager();
         alarmScheduler = new BudgetAlarmScheduler(requireContext());
 
-        // Initialize views
+        // Inicjalizacja widoków
         recyclerView = view.findViewById(R.id.recyclerViewBudgets);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
         textViewNoBudgets = view.findViewById(R.id.textViewNoBudgets);
@@ -79,20 +90,18 @@ public class BudgetFragment extends Fragment {
         switchNotifications = view.findViewById(R.id.switchNotifications);
         fabAddBudget = view.findViewById(R.id.fabAddBudget);
 
-        // Setup RecyclerView
+        // Konfiguracja RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new BudgetAdapter(budgets, categories);
         recyclerView.setAdapter(adapter);
 
-        // Setup SwipeRefreshLayout
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            loadBudgets();
-        });
+        // Konfiguracja SwipeRefreshLayout
+        swipeRefreshLayout.setOnRefreshListener(this::loadBudgets);
 
-        // Setup FAB
+        // Konfiguracja FAB
         fabAddBudget.setOnClickListener(v -> showAddBudgetDialog());
 
-        // Setup notification switch
+        // Konfiguracja przełącznika powiadomień
         switchNotifications.setChecked(NotificationUtils.areNotificationsEnabled(requireContext()));
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
             NotificationUtils.setNotificationsEnabled(requireContext(), isChecked);
@@ -106,26 +115,33 @@ public class BudgetFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Wywoływane po wznowieniu fragmentu.
+     * Ładuje listę budżetów.
+     */
     @Override
     public void onResume() {
         super.onResume();
         loadBudgets();
     }
 
+    /**
+     * Ładuje listę budżetów i kategorii użytkownika.
+     */
     private void loadBudgets() {
         String userId = authManager.getCurrentUserId();
         if (userId == null) return;
 
         showLoading();
 
-        // First load categories
+        // Najpierw ładuje kategorie
         databaseManager.getCategories(userId, new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
             public void onCategoriesLoaded(List<Category> loadedCategories) {
                 categories.clear();
                 categories.addAll(loadedCategories);
 
-                // Then load budgets
+                // Następnie ładuje budżety
                 databaseManager.getBudgets(userId, new DatabaseManager.OnBudgetsLoadedListener() {
                     @Override
                     public void onBudgetsLoaded(List<Budget> loadedBudgets) {
@@ -153,20 +169,23 @@ public class BudgetFragment extends Fragment {
         });
     }
 
+    /**
+     * Wyświetla dialog do dodawania nowego budżetu.
+     */
     private void showAddBudgetDialog() {
-        // Create dialog
+        // Tworzy dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_budget, null);
         builder.setView(dialogView);
 
-        // Get dialog views
+        // Pobiera widoki dialogu
         Spinner spinnerCategory = dialogView.findViewById(R.id.spinnerCategory);
         EditText editTextBudgetLimit = dialogView.findViewById(R.id.editTextBudgetLimit);
         RadioGroup radioGroupPeriod = dialogView.findViewById(R.id.radioGroupPeriod);
         Button buttonSave = dialogView.findViewById(R.id.buttonSave);
         Button buttonCancel = dialogView.findViewById(R.id.buttonCancel);
 
-        // Setup category spinner
+        // Konfiguracja spinnera kategorii
         List<String> categoryNames = new ArrayList<>();
         categoryNames.add("Overall Budget");
 
@@ -181,13 +200,13 @@ public class BudgetFragment extends Fragment {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCategory.setAdapter(spinnerAdapter);
 
-        // Create dialog
+        // Tworzy dialog
         AlertDialog dialog = builder.create();
 
-        // Setup buttons
+        // Konfiguracja przycisków
         buttonCancel.setOnClickListener(v -> dialog.dismiss());
         buttonSave.setOnClickListener(v -> {
-            // Validate input
+            // Walidacja danych wejściowych
             String limitText = editTextBudgetLimit.getText().toString();
             if (limitText.isEmpty()) {
                 editTextBudgetLimit.setError("Please enter a limit amount");
@@ -207,7 +226,7 @@ public class BudgetFragment extends Fragment {
                 return;
             }
 
-            // Get selected period
+            // Pobiera wybrany okres
             int selectedPeriodId = radioGroupPeriod.getCheckedRadioButtonId();
             RadioButton selectedRadioButton = dialogView.findViewById(selectedPeriodId);
             if (selectedRadioButton == null) {
@@ -226,21 +245,21 @@ public class BudgetFragment extends Fragment {
                 periodType = Budget.PERIOD_MONTHLY;
             }
 
-            // Get category ID
+            // Pobiera ID kategorii
             String categoryId = null;
             int selectedCategory = spinnerCategory.getSelectedItemPosition();
-            if (selectedCategory > 0) { // Skip "Overall Budget"
+            if (selectedCategory > 0) { // Pomija "Overall Budget"
                 categoryId = categories.get(selectedCategory - 1).getId();
             }
 
-            // Create budget object
+            // Tworzy obiekt budżetu
             Budget budget = new Budget();
             budget.setUserId(authManager.getCurrentUserId());
             budget.setCategoryId(categoryId);
             budget.setLimit(limit);
             budget.setPeriodType(periodType);
 
-            // Set period start date to today at 00:00:00
+            // Ustawia datę początkową okresu na dzisiejszy dzień o 00:00:00
             Calendar calendar = Calendar.getInstance();
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             calendar.set(Calendar.MINUTE, 0);
@@ -248,20 +267,20 @@ public class BudgetFragment extends Fragment {
             calendar.set(Calendar.MILLISECOND, 0);
 
             if (periodType == Budget.PERIOD_WEEKLY) {
-                // Set to first day of week
+                // Ustawia na pierwszy dzień tygodnia
                 calendar.set(Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek());
             } else if (periodType == Budget.PERIOD_MONTHLY) {
-                // Set to first day of month
+                // Ustawia na pierwszy dzień miesiąca
                 calendar.set(Calendar.DAY_OF_MONTH, 1);
             } else if (periodType == Budget.PERIOD_YEARLY) {
-                // Set to first day of year
+                // Ustawia na pierwszy dzień roku
                 calendar.set(Calendar.DAY_OF_YEAR, 1);
             }
 
             budget.setPeriodStartDate(calendar.getTimeInMillis());
             budget.setCreatedAt(new Date().getTime());
 
-            // Save budget
+            // Zapisuje budżet
             saveBudget(budget);
             dialog.dismiss();
         });
@@ -269,20 +288,25 @@ public class BudgetFragment extends Fragment {
         dialog.show();
     }
 
+    /**
+     * Zapisuje budżet w bazie danych.
+     *
+     * @param budget Obiekt budżetu do zapisania.
+     */
     private void saveBudget(Budget budget) {
         boolean isNewBudget = (budget.getId() == null || budget.getId().isEmpty());
 
         databaseManager.saveBudget(budget, new DatabaseManager.OnBudgetSavedListener() {
             @Override
             public void onBudgetSaved(Budget budget) {
-                loadBudgets(); // Refresh the budget list
+                loadBudgets(); // Odświeża listę budżetów
 
-                // Update any existing widgets
+                // Aktualizuje istniejące widżety
                 if (getContext() != null) {
                     databaseManager.updateBudgetWidgets(requireContext());
                 }
 
-                // If this is a new budget, suggest adding a widget
+                // Jeśli to nowy budżet, sugeruje dodanie widżetu
                 if (isNewBudget) {
                     showAddWidgetDialog(budget);
                 }
@@ -295,6 +319,12 @@ public class BudgetFragment extends Fragment {
             }
         });
     }
+
+    /**
+     * Wyświetla dialog sugerujący dodanie widżetu dla nowego budżetu.
+     *
+     * @param budget Obiekt budżetu.
+     */
     private void showAddWidgetDialog(Budget budget) {
         if (budget == null) return;
 
@@ -313,8 +343,11 @@ public class BudgetFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Aktualizuje interfejs użytkownika po załadowaniu danych.
+     */
     private void updateUI() {
-        // Hide loading indicator
+        // Ukrywa wskaźnik ładowania
         progressBarLoading.setVisibility(View.GONE);
 
         if (budgets.isEmpty()) {
@@ -324,18 +357,26 @@ public class BudgetFragment extends Fragment {
             recyclerView.setVisibility(View.VISIBLE);
             textViewNoBudgets.setVisibility(View.GONE);
 
-            // Update adapter
+            // Aktualizuje adapter
             adapter = new BudgetAdapter(budgets, categories);
             recyclerView.setAdapter(adapter);
         }
     }
 
+    /**
+     * Wyświetla wskaźnik ładowania.
+     */
     private void showLoading() {
         progressBarLoading.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
         textViewNoBudgets.setVisibility(View.GONE);
     }
 
+    /**
+     * Obsługuje błędy podczas ładowania danych.
+     *
+     * @param message Komunikat błędu.
+     */
     private void handleError(String message) {
         if (getActivity() == null) return;
 
@@ -346,7 +387,7 @@ public class BudgetFragment extends Fragment {
         progressBarLoading.setVisibility(View.GONE);
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
 
-        // Show empty state if no data loaded previously
+        // Wyświetla stan pusty, jeśli wcześniej nie załadowano danych
         if (budgets.isEmpty()) {
             textViewNoBudgets.setVisibility(View.VISIBLE);
         } else {

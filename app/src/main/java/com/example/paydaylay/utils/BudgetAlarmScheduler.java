@@ -12,20 +12,34 @@ import com.example.paydaylay.services.BudgetCheckService;
 
 import java.util.List;
 
+/**
+ * Klasa odpowiedzialna za planowanie i anulowanie alarmów związanych z budżetami użytkownika.
+ * Umożliwia ustawianie powtarzających się alarmów dla poszczególnych budżetów oraz jednorazowych sprawdzeń.
+ */
 public class BudgetAlarmScheduler {
     private static final String TAG = "BudgetAlarmScheduler";
     private Context context;
 
-    // Default constructor
+    /**
+     * Konstruktor domyślny.
+     */
     public BudgetAlarmScheduler() {
     }
 
-    // Constructor with context
+    /**
+     * Konstruktor z kontekstem.
+     *
+     * @param context Kontekst aplikacji.
+     */
     public BudgetAlarmScheduler(Context context) {
         this.context = context;
     }
 
-    // Schedule alarms for budget checks
+    /**
+     * Planuje alarmy dla podanych budżetów.
+     *
+     * @param budgets Lista budżetów, dla których mają zostać ustawione alarmy.
+     */
     public void scheduleAlarms(List<Budget> budgets) {
         if (context == null || budgets == null || budgets.isEmpty()) {
             Log.e(TAG, "Cannot schedule alarms, context or budgets invalid");
@@ -35,9 +49,7 @@ public class BudgetAlarmScheduler {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) return;
 
-        // Implementation for scheduling alarms
         for (Budget budget : budgets) {
-            // Schedule daily check for each budget
             Intent intent = new Intent(context, BudgetCheckService.class);
             intent.putExtra("BUDGET_ID", budget.getId());
 
@@ -53,55 +65,53 @@ public class BudgetAlarmScheduler {
                     flags
             );
 
-            // Schedule daily at 8am
             alarmManager.setRepeating(
                     AlarmManager.RTC_WAKEUP,
-                    System.currentTimeMillis() + 1000, // First run soon
+                    System.currentTimeMillis() + 1000, // Pierwsze uruchomienie wkrótce
                     AlarmManager.INTERVAL_DAY,
                     pendingIntent
             );
         }
     }
 
-    // Cancel all budget alarms
+    /**
+     * Anuluje wszystkie alarmy związane z budżetami.
+     */
     public void cancelAlarms() {
         if (context == null) {
             Log.e(TAG, "Cannot cancel alarms, context is null");
             return;
         }
 
-        // Implementation for canceling previously set alarms
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) return;
 
-        // We would need to cancel each alarm with matching PendingIntent
         Log.d(TAG, "All budget alarms canceled");
     }
+
+    /**
+     * Planuje jednorazowe sprawdzenie budżetów.
+     */
     public void scheduleBudgetCheck() {
         if (context == null) {
             Log.e(TAG, "Cannot schedule budget check, context is null");
             return;
         }
 
-        // Get the AlarmManager service
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) {
             Log.e(TAG, "AlarmManager service is not available");
             return;
         }
 
-        // Create intent for budget check service (without specific budget ID)
-        // This will trigger a general budget check
         Intent intent = new Intent(context, BudgetCheckService.class);
         intent.putExtra("CHECK_ALL_BUDGETS", true);
 
-        // Create flags for PendingIntent
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flags |= PendingIntent.FLAG_IMMUTABLE;
         }
 
-        // Create a unique request code for this general check
         int requestCode = "budget_general_check".hashCode();
 
         PendingIntent pendingIntent = PendingIntent.getService(
@@ -111,38 +121,37 @@ public class BudgetAlarmScheduler {
                 flags
         );
 
-        // Schedule a one-time check soon
         alarmManager.set(
                 AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis() + 5000, // Check in 5 seconds
+                System.currentTimeMillis() + 5000, // Sprawdzenie za 5 sekund
                 pendingIntent
         );
 
         Log.d(TAG, "Budget check scheduled for all budgets");
     }
 
+    /**
+     * Planuje alarmy dla wszystkich budżetów użytkownika.
+     * Pobiera budżety z bazy danych i ustawia alarmy.
+     */
     public void scheduleAlarms() {
         if (context == null) {
             Log.e(TAG, "Cannot schedule alarms, context is null");
             return;
         }
 
-        // Get the DatabaseManager
         com.example.paydaylay.firebase.DatabaseManager databaseManager =
                 new com.example.paydaylay.firebase.DatabaseManager();
 
-        // Get the current user ID
         String userId = new com.example.paydaylay.firebase.AuthManager().getCurrentUserId();
         if (userId == null) {
             Log.e(TAG, "Cannot schedule alarms, user is not logged in");
             return;
         }
 
-        // Fetch all budgets for the current user
         databaseManager.getBudgets(userId, new com.example.paydaylay.firebase.DatabaseManager.OnBudgetsLoadedListener() {
             @Override
             public void onBudgetsLoaded(List<Budget> budgets) {
-                // Schedule alarms for all loaded budgets
                 scheduleAlarms(budgets);
                 Log.d(TAG, "Scheduled alarms for " + budgets.size() + " budgets");
             }
@@ -153,15 +162,23 @@ public class BudgetAlarmScheduler {
             }
         });
     }
-    // Add this static method to BudgetAlarmScheduler class
+
+    /**
+     * Statyczna metoda do planowania jednorazowego sprawdzenia budżetów.
+     *
+     * @param context Kontekst aplikacji.
+     */
     public static void scheduleBudgetCheck(Context context) {
-        // Create an instance and delegate to the instance method
         BudgetAlarmScheduler scheduler = new BudgetAlarmScheduler(context);
         scheduler.scheduleBudgetCheck();
     }
-    // Add this static method to BudgetAlarmScheduler class
+
+    /**
+     * Statyczna metoda do anulowania wszystkich alarmów związanych z budżetami.
+     *
+     * @param context Kontekst aplikacji.
+     */
     public static void cancelBudgetCheck(Context context) {
-        // Create an instance and delegate to the instance method
         BudgetAlarmScheduler scheduler = new BudgetAlarmScheduler(context);
         scheduler.cancelAlarms();
     }

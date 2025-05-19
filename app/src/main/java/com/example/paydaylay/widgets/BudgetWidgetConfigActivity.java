@@ -25,6 +25,10 @@ import com.example.paydaylay.utils.AlarmPermissionHelper;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Aktywność konfiguracji widżetu budżetu.
+ * Umożliwia użytkownikowi wybór budżetu, który ma być wyświetlany w widżecie.
+ */
 public class BudgetWidgetConfigActivity extends AppCompatActivity implements BudgetSelectionAdapter.OnBudgetSelectedListener {
 
     private static final String TAG = "BudgetWidgetConfig";

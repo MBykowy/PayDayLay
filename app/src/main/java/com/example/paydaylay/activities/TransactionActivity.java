@@ -15,7 +15,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.paydaylay.R;
@@ -31,14 +30,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Klasa TransactionActivity obsługuje dodawanie, edytowanie i usuwanie transakcji.
+ * Umożliwia użytkownikowi wprowadzenie szczegółów transakcji, takich jak kwota, kategoria,
+ * data, opis oraz typ (wydatek/przychód).
+ */
 public class TransactionActivity extends BaseActivity {
 
+    // Deklaracje pól widoków
     private EditText editTextAmount, editTextDescription;
     private TextView textViewDate;
     private Spinner spinnerCategory;
     private Switch switchExpenseIncome;
     private Button buttonSave, buttonDelete;
 
+    // Deklaracje pól pomocniczych
     private Calendar calendar;
     private SimpleDateFormat dateFormat;
     private DatabaseManager databaseManager;
@@ -47,25 +53,31 @@ public class TransactionActivity extends BaseActivity {
     private Transaction currentTransaction;
     private boolean isEditMode = false;
 
+    /**
+     * Metoda wywoływana podczas tworzenia aktywności.
+     * Inicjalizuje widoki, menedżery oraz ustawia dane w przypadku edycji transakcji.
+     *
+     * @param savedInstanceState Zapisany stan aktywności (jeśli istnieje).
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_transaction);
 
-        // Initialize managers
+        // Inicjalizacja menedżerów i kalendarza
         databaseManager = new DatabaseManager();
         authManager = new AuthManager();
         calendar = Calendar.getInstance();
         dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
-        // Set up toolbar
+        // Ustawienie paska narzędzi
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        // Initialize views
+        // Inicjalizacja widoków
         editTextAmount = findViewById(R.id.editTextAmount);
         textViewDate = findViewById(R.id.textViewDate);
         editTextDescription = findViewById(R.id.editTextDescription);
@@ -74,10 +86,10 @@ public class TransactionActivity extends BaseActivity {
         buttonSave = findViewById(R.id.buttonSave);
         buttonDelete = findViewById(R.id.buttonDelete);
 
-        // Set current date initially
+        // Ustawienie bieżącej daty
         updateDateDisplay();
 
-        // Check if we're in edit mode
+        // Sprawdzenie trybu edycji
         if (getIntent().hasExtra("transaction")) {
             currentTransaction = (Transaction) getIntent().getSerializableExtra("transaction");
             isEditMode = true;
@@ -89,19 +101,18 @@ public class TransactionActivity extends BaseActivity {
             buttonDelete.setVisibility(View.GONE);
         }
 
-        // Load categories
+        // Załadowanie kategorii
         loadCategories();
 
-        // Set up date picker dialog
+        // Ustawienie nasłuchiwaczy dla widoków
         textViewDate.setOnClickListener(v -> showDatePickerDialog());
-
-        // Set up save button
         buttonSave.setOnClickListener(v -> saveTransaction());
-
-        // Set up delete button
         buttonDelete.setOnClickListener(v -> showDeleteConfirmationDialog());
     }
 
+    /**
+     * Wypełnia formularz danymi transakcji w trybie edycji.
+     */
     private void fillFormWithTransactionData() {
         if (currentTransaction != null) {
             editTextAmount.setText(String.valueOf(currentTransaction.getAmount()));
@@ -112,6 +123,9 @@ public class TransactionActivity extends BaseActivity {
         }
     }
 
+    /**
+     * Ładuje kategorie z bazy danych i ustawia je w spinnerze.
+     */
     private void loadCategories() {
         databaseManager.getCategories(authManager.getCurrentUserId(), new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
@@ -119,7 +133,7 @@ public class TransactionActivity extends BaseActivity {
                 categories = loadedCategories;
                 setupCategorySpinner();
 
-                // Set the selected category if in edit mode
+                // Ustawienie wybranej kategorii w trybie edycji
                 if (isEditMode && currentTransaction != null) {
                     for (int i = 0; i < categories.size(); i++) {
                         if (categories.get(i).getId().equals(currentTransaction.getCategoryId())) {
@@ -133,12 +147,15 @@ public class TransactionActivity extends BaseActivity {
             @Override
             public void onError(Exception e) {
                 Toast.makeText(TransactionActivity.this,
-                        "Error loading categories: " + e.getMessage(),
+                        "Błąd podczas ładowania kategorii: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    /**
+     * Ustawia adapter dla spinnera kategorii.
+     */
     private void setupCategorySpinner() {
         List<String> categoryNames = new ArrayList<>();
         for (Category category : categories) {
@@ -151,6 +168,9 @@ public class TransactionActivity extends BaseActivity {
         spinnerCategory.setAdapter(adapter);
     }
 
+    /**
+     * Wyświetla okno dialogowe wyboru daty.
+     */
     private void showDatePickerDialog() {
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 this,
@@ -167,10 +187,16 @@ public class TransactionActivity extends BaseActivity {
         datePickerDialog.show();
     }
 
+    /**
+     * Aktualizuje wyświetlaną datę w widoku.
+     */
     private void updateDateDisplay() {
         textViewDate.setText(dateFormat.format(calendar.getTime()));
     }
 
+    /**
+     * Zapisuje transakcję do bazy danych.
+     */
     private void saveTransaction() {
         if (!validateForm()) {
             return;
@@ -202,14 +228,14 @@ public class TransactionActivity extends BaseActivity {
                 @Override
                 public void onSuccess() {
                     Toast.makeText(TransactionActivity.this,
-                            "Transaction updated successfully", Toast.LENGTH_SHORT).show();
+                            "Transakcja zaktualizowana pomyślnie", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
                 public void onError(Exception e) {
                     Toast.makeText(TransactionActivity.this,
-                            "Error updating transaction: " + e.getMessage(),
+                            "Błąd podczas aktualizacji transakcji: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                 }
             }, TransactionActivity.this);
@@ -218,77 +244,94 @@ public class TransactionActivity extends BaseActivity {
                 @Override
                 public void onSuccess() {
                     Toast.makeText(TransactionActivity.this,
-                            "Transaction added successfully", Toast.LENGTH_SHORT).show();
+                            "Transakcja dodana pomyślnie", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
                 public void onError(Exception e) {
                     Toast.makeText(TransactionActivity.this,
-                            "Error adding transaction: " + e.getMessage(),
+                            "Błąd podczas dodawania transakcji: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                 }
             }, TransactionActivity.this);
         }
     }
 
+    /**
+     * Waliduje formularz transakcji.
+     *
+     * @return True, jeśli formularz jest poprawny, w przeciwnym razie false.
+     */
     private boolean validateForm() {
         boolean valid = true;
 
         String amount = editTextAmount.getText().toString();
         if (TextUtils.isEmpty(amount)) {
-            editTextAmount.setError("Required");
+            editTextAmount.setError("Wymagane");
             valid = false;
         } else {
             try {
                 double value = Double.parseDouble(amount);
                 if (value <= 0) {
-                    editTextAmount.setError("Must be greater than 0");
+                    editTextAmount.setError("Musi być większe od 0");
                     valid = false;
                 }
             } catch (NumberFormatException e) {
-                editTextAmount.setError("Must be a valid number");
+                editTextAmount.setError("Musi być liczbą");
                 valid = false;
             }
         }
 
         if (categories == null || categories.isEmpty()) {
-            Toast.makeText(this, "Please create a category first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Najpierw utwórz kategorię", Toast.LENGTH_SHORT).show();
             valid = false;
         }
 
         return valid;
     }
 
+    /**
+     * Wyświetla okno dialogowe potwierdzenia usunięcia transakcji.
+     */
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("Delete Transaction")
-                .setMessage("Are you sure you want to delete this transaction?")
-                .setPositiveButton("Delete", (dialog, which) -> deleteTransaction())
-                .setNegativeButton("Cancel", null)
+                .setTitle("Usuń transakcję")
+                .setMessage("Czy na pewno chcesz usunąć tę transakcję?")
+                .setPositiveButton("Usuń", (dialog, which) -> deleteTransaction())
+                .setNegativeButton("Anuluj", null)
                 .show();
     }
 
+    /**
+     * Usuwa transakcję z bazy danych.
+     */
     private void deleteTransaction() {
         if (currentTransaction != null) {
             databaseManager.deleteTransaction(currentTransaction.getId(), new DatabaseManager.OnTransactionListener() {
                 @Override
                 public void onSuccess() {
                     Toast.makeText(TransactionActivity.this,
-                            "Transaction deleted successfully", Toast.LENGTH_SHORT).show();
+                            "Transakcja usunięta pomyślnie", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
                 public void onError(Exception e) {
                     Toast.makeText(TransactionActivity.this,
-                            "Error deleting transaction: " + e.getMessage(),
+                            "Błąd podczas usuwania transakcji: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                 }
             });
         }
     }
 
+    /**
+     * Obsługuje wybór elementów menu.
+     *
+     * @param item Wybrany element menu.
+     * @return True, jeśli zdarzenie zostało obsłużone, w przeciwnym razie false.
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {

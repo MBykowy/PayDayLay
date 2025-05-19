@@ -18,9 +18,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
+/**
+ * Klasa pomocnicza do zarządzania danymi widżetów budżetowych.
+ * Obsługuje zapisywanie, odczytywanie i aktualizowanie danych budżetów oraz synchronizację z bazą danych.
+ */
 public class BudgetWidgetDataHelper {
     private static final String TAG = "BudgetWidgetDataHelper";
     private static final String PREFS_NAME = "BudgetWidgetPrefs";
@@ -33,6 +35,11 @@ public class BudgetWidgetDataHelper {
     private final Gson gson;
     private final DatabaseManager databaseManager;
 
+    /**
+     * Konstruktor klasy BudgetWidgetDataHelper.
+     *
+     * @param context Kontekst aplikacji.
+     */
     public BudgetWidgetDataHelper(Context context) {
         this.context = context;
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -40,13 +47,21 @@ public class BudgetWidgetDataHelper {
         this.databaseManager = new DatabaseManager();
     }
 
-
-
+    /**
+     * Zapisuje listę wszystkich budżetów w SharedPreferences.
+     *
+     * @param budgets Lista budżetów do zapisania.
+     */
     public void saveAllBudgets(List<Budget> budgets) {
         String json = gson.toJson(budgets);
         prefs.edit().putString(KEY_ALL_BUDGETS, json).apply();
     }
 
+    /**
+     * Pobiera listę wszystkich zapisanych budżetów z SharedPreferences.
+     *
+     * @return Lista budżetów.
+     */
     public List<Budget> getAllBudgets() {
         String json = prefs.getString(KEY_ALL_BUDGETS, null);
         if (json == null) {
@@ -56,14 +71,27 @@ public class BudgetWidgetDataHelper {
         return gson.fromJson(json, type);
     }
 
+    /**
+     * Zapisuje czas ostatniej aktualizacji danych w SharedPreferences.
+     *
+     * @param timestamp Znacznik czasu ostatniej aktualizacji.
+     */
     public void saveLastUpdateTime(long timestamp) {
         prefs.edit().putLong(KEY_LAST_UPDATE, timestamp).apply();
     }
 
+    /**
+     * Pobiera czas ostatniej aktualizacji danych z SharedPreferences.
+     *
+     * @return Znacznik czasu ostatniej aktualizacji.
+     */
     public long getLastUpdateTime() {
         return prefs.getLong(KEY_LAST_UPDATE, 0);
     }
 
+    /**
+     * Aktualizuje wszystkie widżety budżetowe.
+     */
     public void updateAllWidgets() {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         ComponentName widgetComponent = new ComponentName(context, BudgetWidgetProvider.class);
@@ -78,26 +106,34 @@ public class BudgetWidgetDataHelper {
             Log.d(TAG, "Zaktualizowano " + appWidgetIds.length + " widgetów");
         }
     }
+
+    /**
+     * Zapisuje budżet dla określonego widżetu w SharedPreferences.
+     *
+     * @param appWidgetId ID widżetu.
+     * @param budget      Obiekt budżetu do zapisania.
+     */
     public void saveBudgetForWidget(int appWidgetId, Budget budget) {
         if (budget == null) {
             Log.e(TAG, "Nie można zapisać pustego budżetu");
             return;
         }
 
-        // Konwertuj budżet na format JSON
         String budgetJson = gson.toJson(budget);
-
-        // Zapisz budżet w SharedPreferences z kluczem zawierającym ID widgetu
         prefs.edit()
                 .putString(KEY_BUDGET_PREFIX + appWidgetId, budgetJson)
                 .apply();
 
         Log.d(TAG, "Zapisano budżet dla widgetu ID: " + appWidgetId);
-
-        // Zaktualizuj widget
         updateWidget(appWidgetId);
     }
 
+    /**
+     * Pobiera budżet zapisany dla określonego widżetu.
+     *
+     * @param appWidgetId ID widżetu.
+     * @return Obiekt budżetu lub null, jeśli nie znaleziono.
+     */
     public Budget getBudgetForWidget(int appWidgetId) {
         String budgetJson = prefs.getString(KEY_BUDGET_PREFIX + appWidgetId, null);
         if (budgetJson == null) {
@@ -106,19 +142,24 @@ public class BudgetWidgetDataHelper {
 
         Budget budget = gson.fromJson(budgetJson, Budget.class);
 
-        // Aktualizuj dane o wydatkach na podstawie transakcji
         if (budget != null) {
             loadTransactionsAndUpdateBudget(budget, appWidgetId);
         }
 
         return budget;
     }
+
+    /**
+     * Ładuje transakcje dla budżetu i aktualizuje jego dane.
+     *
+     * @param budget      Obiekt budżetu.
+     * @param appWidgetId ID widżetu.
+     */
     private void loadTransactionsAndUpdateBudget(Budget budget, int appWidgetId) {
         if (budget == null || budget.getUserId() == null) {
             return;
         }
 
-        // Oblicz zakres dat dla budżetu
         Date startDate = new Date(budget.getPeriodStartDate());
         Calendar endCal = Calendar.getInstance();
         endCal.setTimeInMillis(budget.getPeriodStartDate());
@@ -146,7 +187,6 @@ public class BudgetWidgetDataHelper {
                 new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> transactions) {
-                        // Obliczanie wydatków - istniejący kod
                         double totalSpent = 0;
                         for (Transaction transaction : transactions) {
                             if (transaction.isExpense()) {
@@ -154,18 +194,15 @@ public class BudgetWidgetDataHelper {
                             }
                         }
 
-                        // Zapisz tylko jeśli kwota się zmieniła
                         if (Math.abs(budget.getSpent() - totalSpent) > 0.01) {
                             budget.setSpent(totalSpent);
 
-                            // Zapisz zaktualizowany budżet bez wywoływania updateWidget
                             prefs.edit()
                                     .putString(KEY_BUDGET_PREFIX + appWidgetId, gson.toJson(budget))
                                     .apply();
 
                             Log.d(TAG, "Zaktualizowano wydatki: " + totalSpent + " zł");
 
-                            // Sprawdź czy należy wyświetlić powiadomienie
                             BudgetNotificationManager notificationManager =
                                     new BudgetNotificationManager(context);
                             notificationManager.checkAndShowNotification(budget, appWidgetId);
@@ -181,6 +218,11 @@ public class BudgetWidgetDataHelper {
                 });
     }
 
+    /**
+     * Aktualizuje widżet o podanym ID.
+     *
+     * @param appWidgetId ID widżetu.
+     */
     private void updateWidget(int appWidgetId) {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         Intent updateIntent = new Intent(context, BudgetWidgetProvider.class);

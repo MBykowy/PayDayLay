@@ -20,17 +20,29 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Klasa odpowiedzialna za eksportowanie transakcji do pliku CSV.
+ * Umożliwia zapisanie transakcji w formacie CSV oraz udostępnienie pliku innym aplikacjom.
+ */
 public class CsvExporter {
 
     private final Context context;
     private final SimpleDateFormat dateFormat;
     private final String currencySymbol;
 
+    /**
+     * Interfejs do obsługi zdarzeń eksportu CSV.
+     */
     public interface OnCsvExportListener {
-        void onSuccess(File csvFile);
-        void onError(Exception e);
+        void onSuccess(File csvFile); // Wywoływane po pomyślnym eksporcie
+        void onError(Exception e);   // Wywoływane w przypadku błędu
     }
 
+    /**
+     * Konstruktor klasy CsvExporter.
+     *
+     * @param context Kontekst aplikacji.
+     */
     public CsvExporter(Context context) {
         this.context = context;
         this.dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -38,28 +50,34 @@ public class CsvExporter {
     }
 
     /**
-     * Export transactions to a CSV file
+     * Eksportuje transakcje do pliku CSV.
+     *
+     * @param transactions Lista transakcji do eksportu.
+     * @param categoryMap  Mapa kategorii przypisanych do transakcji.
+     * @param startDate    Data początkowa zakresu eksportu.
+     * @param endDate      Data końcowa zakresu eksportu.
+     * @param listener     Słuchacz zdarzeń eksportu.
      */
     public void exportTransactions(List<Transaction> transactions, Map<String, Category> categoryMap,
                                    Date startDate, Date endDate, OnCsvExportListener listener) {
         try {
-            // Create directory for CSV files if it doesn't exist
+            // Tworzy katalog na pliki CSV, jeśli nie istnieje
             File csvDir = new File(Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS), "PayDayLay");
             if (!csvDir.exists() && !csvDir.mkdirs()) {
                 throw new Exception(context.getString(R.string.error_creating_directory));
             }
 
-            // Create filename with timestamp
+            // Tworzy nazwę pliku z sygnaturą czasową
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
                     .format(new Date());
             String fileName = "transactions_" + timestamp + ".csv";
             File csvFile = new File(csvDir, fileName);
 
-            // Create CSV writer
+            // Tworzy obiekt CSVWriter
             CSVWriter writer = new CSVWriter(new FileWriter(csvFile));
 
-            // Write header
+            // Zapisuje nagłówki
             String[] header = new String[] {
                     context.getString(R.string.date),
                     context.getString(R.string.description),
@@ -69,24 +87,20 @@ public class CsvExporter {
             };
             writer.writeNext(header);
 
-            // Write transactions
+            // Zapisuje transakcje
             for (Transaction transaction : transactions) {
-                // Get category name
                 String categoryName = context.getString(R.string.unknown_category);
                 if (categoryMap.containsKey(transaction.getCategoryId())) {
                     categoryName = categoryMap.get(transaction.getCategoryId()).getName();
                 }
 
-                // Format amount
                 String amount = String.format(Locale.getDefault(), "%.2f %s",
                         transaction.getAmount(), currencySymbol);
 
-                // Determine transaction type
                 String type = transaction.isExpense() ?
                         context.getString(R.string.expense) :
                         context.getString(R.string.income);
 
-                // Create row
                 String[] row = new String[] {
                         dateFormat.format(transaction.getDate()),
                         transaction.getDescription() != null ? transaction.getDescription() : "",
@@ -97,10 +111,10 @@ public class CsvExporter {
                 writer.writeNext(row);
             }
 
-            // Close writer
+            // Zamyka writer
             writer.close();
 
-            // Notify success
+            // Powiadamia o sukcesie
             listener.onSuccess(csvFile);
 
         } catch (Exception e) {
@@ -109,7 +123,9 @@ public class CsvExporter {
     }
 
     /**
-     * Share the CSV file with other apps
+     * Udostępnia plik CSV innym aplikacjom.
+     *
+     * @param csvFile Plik CSV do udostępnienia.
      */
     public void shareFile(File csvFile) {
         Uri fileUri = FileProvider.getUriForFile(
@@ -130,10 +146,10 @@ public class CsvExporter {
     }
 
     /**
-     * Get summary information as an array of string arrays for CSV export
-     */
-    /**
-     * Get summary information as an array of string arrays for CSV export
+     * Generuje podsumowanie transakcji w formacie tablicy do eksportu CSV.
+     *
+     * @param transactions Lista transakcji.
+     * @return Tablica danych podsumowania.
      */
     public String[][] getSummaryData(List<Transaction> transactions) {
         double totalIncome = 0;
