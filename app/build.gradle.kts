@@ -36,6 +36,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.google.firebase.appcheck.debug)
+    implementation(libs.google.firebase.appcheck.playintegrity)
+    // Room dependencies
+    val roomVersion = "2.5.2"
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
+
+    // Existing dependencies
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.firebase.firestore)
@@ -52,4 +60,9 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation(libs.play.services.safetynet)
+    implementation (libs.firebase.appcheck)
+    implementation (libs.firebase.appcheck.playintegrity)
+    implementation (libs.firebase.appcheck.debug)
+    implementation(libs.swiperefreshlayout)
+    implementation("com.google.code.gson:gson:2.10.1")
 }

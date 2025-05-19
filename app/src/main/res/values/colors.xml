@@ -36,6 +36,9 @@
 
     <!-- For light theme -->
     <color name="expense_color">#F44336</color>  <!-- Red -->
-    <color name="income_color">#4CAF50</color>  <!-- Green -->
+    <color name="income_color">#4CAF50</color>
+    <color name="progress_warning">#FF1100</color>
+    <color name="progress_danger">#FFC107</color>
+    <color name="progress_normal">#4CAF50</color>  <!-- Green -->
 
 </resources>

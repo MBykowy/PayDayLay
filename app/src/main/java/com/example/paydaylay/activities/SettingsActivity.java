@@ -26,7 +26,7 @@ import com.example.paydaylay.utils.LocaleHelper;
 import com.example.paydaylay.utils.NotificationUtils;
 import com.example.paydaylay.utils.ThemeUtils;
 
-public class SettingsActivity extends AppCompatActivity {
+public class SettingsActivity extends BaseActivity {
 
     private RadioGroup radioGroupTheme, radioGroupLanguage;
     private RadioButton radioSystemTheme, radioLightTheme, radioDarkTheme;
@@ -77,7 +77,6 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        // Set listener for language changes
         radioGroupLanguage.setOnCheckedChangeListener((group, checkedId) -> {
             String languageCode;
             if (checkedId == R.id.radioPolish) {
@@ -86,15 +85,10 @@ public class SettingsActivity extends AppCompatActivity {
                 languageCode = "en";
             }
 
-            // Only change if language actually changed
+            // Check if language actually changed
             if (!languageCode.equals(LocaleHelper.getLanguage(this))) {
                 LocaleHelper.setLocale(this, languageCode);
-
-                // Restart the activity to apply language change
-                Intent refresh = new Intent(this, SettingsActivity.class);
-                refresh.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                finish();
-                startActivity(refresh);
+                // The app restart is now handled in the LocaleHelper
             }
         });
     }

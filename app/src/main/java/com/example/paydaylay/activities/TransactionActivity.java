@@ -31,7 +31,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class TransactionActivity extends AppCompatActivity {
+public class TransactionActivity extends BaseActivity {
 
     private EditText editTextAmount, editTextDescription;
     private TextView textViewDate;
@@ -212,7 +212,7 @@ public class TransactionActivity extends AppCompatActivity {
                             "Error updating transaction: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                 }
-            });
+            }, TransactionActivity.this);
         } else {
             databaseManager.addTransaction(transaction, new DatabaseManager.OnTransactionListener() {
                 @Override
@@ -228,7 +228,7 @@ public class TransactionActivity extends AppCompatActivity {
                             "Error adding transaction: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
                 }
-            });
+            }, TransactionActivity.this);
         }
     }
 

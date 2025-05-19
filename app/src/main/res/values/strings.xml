@@ -214,6 +214,31 @@
     <string name="exporting_pdf">Exporting chart to PDF...</string>
     <string name="view_file">View File</string>
     <string name="cannot_open_pdf">Cannot open PDF file</string>
+    <!-- Dashboard strings -->
+    <string name="current_balance">Current Balance</string>
+    <string name="balance_placeholder">0.00</string>
+    <string name="recent_transactions">Recent Transactions</string>
+    <string name="title_budgets">Budgets</string>
+    <string name="other">Inne</string>
 
+
+    <string name="add_widget_title">Add Widget</string>
+    <string name="add_widget_message">Would you like to add a widget to your home screen to monitor this budget?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="select_budget_for_widget">Wybierz budżet dla widgetu</string>
+    <string name="no_budgets_available">Brak dostępnych budżetów. Dodaj budżet w aplikacji.</string>
+    <string name="error_loading_budgets">Błąd podczas ładowania budżetów</string>
+    <string name="widget_login_required">Musisz być zalogowany, aby dodać widget</string>
+
+    <string name="add_widget">Dodaj widget</string>
+    <string name="updated">Updated</string>
+    <string name="no_budget_selected">No budget selected</string>
+    <string name="alarm_permission_title">Potrzebne uprawnienie</string>
+    <string name="alarm_permission_message">Aby widget mógł się regularnie aktualizować, aplikacja potrzebuje uprawnień do planowania alarmów. Proszę włączyć to uprawnienie w ustawieniach.</string>
+    <string name="settings">Ustawienia</string>
+    <string name="remaining">pozostało</string>
+    <string name="spent">wydano</string>
 
 </resources>
+

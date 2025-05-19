@@ -1,11 +1,8 @@
 package com.example.paydaylay.fragments;
 
-import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,8 +20,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
@@ -35,6 +30,7 @@ import com.example.paydaylay.models.Category;
 import com.example.paydaylay.models.Transaction;
 import com.example.paydaylay.utils.PdfExporter;
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
@@ -56,7 +52,7 @@ import java.util.Map;
 
 public class ChartsFragment extends Fragment {
 
-    private static final int PERMISSION_REQUEST_WRITE_STORAGE = 100;
+    private static final String TAG = "ChartsFragment";
     private static final int CHART_TYPE_EXPENSES = 0;
     private static final int CHART_TYPE_INCOME = 1;
     private static final int CHART_TYPE_MONTHLY = 2;
@@ -76,6 +72,7 @@ public class ChartsFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "ChartsFragment onCreate - Setting has options menu to true");
         setHasOptionsMenu(true);
     }
 
@@ -153,6 +150,9 @@ public class ChartsFragment extends Fragment {
     }
 
     private void updateCharts() {
+        if (!isAdded()) {
+            return; // Przerwij jeśli fragment nie jest już dołączony
+        }
         if (transactions.isEmpty()) {
             showNoDataMessage();
             return;
@@ -175,6 +175,9 @@ public class ChartsFragment extends Fragment {
     }
 
     private void updatePieChart(boolean showExpenses) {
+        if (!isAdded()) {
+            return; // Przerwij jeśli fragment nie jest już dołączony
+        }
         // Aggregate data by category
         Map<String, Float> categoryTotals = new HashMap<>();
         Map<String, Integer> categoryColors = new HashMap<>();
@@ -224,7 +227,7 @@ public class ChartsFragment extends Fragment {
         PieDataSet dataSet = new PieDataSet(pieEntries, "");
         dataSet.setColors(colors);
         dataSet.setValueTextSize(12f);
-        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextColor(android.graphics.Color.WHITE);
 
         PieData data = new PieData(dataSet);
         data.setValueFormatter(new com.github.mikephil.charting.formatter.PercentFormatter(pieChart));
@@ -233,7 +236,7 @@ public class ChartsFragment extends Fragment {
         pieChart.setUsePercentValues(true);
         pieChart.setDrawHoleEnabled(true);
         pieChart.setEntryLabelTextSize(12f);
-        pieChart.setEntryLabelColor(Color.WHITE);
+        pieChart.setEntryLabelColor(android.graphics.Color.WHITE);
 
         Description description = new Description();
         description.setText(showExpenses ?
@@ -320,6 +323,9 @@ public class ChartsFragment extends Fragment {
                 databaseManager.getTransactions(userId, new DatabaseManager.OnTransactionsLoadedListener() {
                     @Override
                     public void onTransactionsLoaded(List<Transaction> loadedTransactions) {
+                        if (!isAdded()) {
+                            return; // Przerwij jeśli fragment nie jest już dołączony
+                        }
                         transactions = filterTransactionsByTimeFrame(loadedTransactions);
                         updateCharts();
                     }
@@ -414,6 +420,7 @@ public class ChartsFragment extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        Log.d(TAG, "onCreateOptionsMenu called");
         inflater.inflate(R.menu.charts_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -421,100 +428,140 @@ public class ChartsFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_export_pdf) {
-            if (transactions.isEmpty()) {
-                Toast.makeText(getActivity(), R.string.no_data_to_export, Toast.LENGTH_SHORT).show();
-                return true;
-            }
-
-            // Check for storage permission
-            if (ContextCompat.checkSelfPermission(requireContext(),
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(requireActivity(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        PERMISSION_REQUEST_WRITE_STORAGE);
-            } else {
-                exportToPdf();
-            }
+            Log.d(TAG, "PDF export button clicked!");
+            exportToPdf();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == PERMISSION_REQUEST_WRITE_STORAGE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                exportToPdf();
-            } else {
-                Toast.makeText(getActivity(), R.string.storage_permission_denied, Toast.LENGTH_SHORT).show();
+    private void exportToPdf() {
+        try {
+            // Get current chart and title
+            int chartType = spinnerChartType.getSelectedItemPosition();
+            Chart chart = chartType == CHART_TYPE_MONTHLY ? barChart : pieChart;
+
+            // Check if chart is visible and has data
+            if (chart.getVisibility() != View.VISIBLE || chart.getData() == null) {
+                Toast.makeText(requireContext(),
+                        "No chart data to export", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            String chartTypeText = spinnerChartType.getSelectedItem().toString();
+            String timeFrameText = spinnerTimeFrame.getSelectedItem().toString();
+            String chartTitle = chartTypeText + " - " + timeFrameText;
+
+            Log.d(TAG, "Starting PDF export for chart: " + chartTitle);
+
+            // Show progress dialog
+            ProgressDialog progressDialog = new ProgressDialog(requireContext());
+            progressDialog.setMessage("Exporting PDF...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+
+            // Export chart
+            PdfExporter pdfExporter = new PdfExporter(requireContext());
+            pdfExporter.exportChart(chart, chartTitle, new PdfExporter.OnPdfExportListener() {
+                @Override
+                public void onSuccess(String filePath) {
+                    if (getActivity() == null) return;
+
+                    progressDialog.dismiss();
+                    Log.d(TAG, "PDF export successful: " + filePath);
+
+                    // Show success dialog with options
+                    showPdfSuccessDialog(filePath);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    if (getActivity() == null) return;
+
+                    progressDialog.dismiss();
+                    Log.e(TAG, "PDF export error", e);
+
+                    Toast.makeText(requireContext(),
+                            "Export Error: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error in exportToPdf", e);
+            Toast.makeText(requireContext(),
+                    "Export error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    private void exportToPdf() {
-        int chartType = spinnerChartType.getSelectedItemPosition();
-        int timeFramePosition = spinnerTimeFrame.getSelectedItemPosition();
+    private void showPdfSuccessDialog(String filePath) {
+        File pdfFile = new File(filePath);
 
-        String timeFrameText = spinnerTimeFrame.getSelectedItem().toString();
-        String chartTypeText = spinnerChartType.getSelectedItem().toString();
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("PDF Export Successful");
+        builder.setMessage("PDF saved to:\n" + filePath);
 
-        // Show a progress dialog
-        ProgressDialog progressDialog = new ProgressDialog(requireContext());
-        progressDialog.setMessage(getString(R.string.exporting_pdf));
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+        // View option
+        builder.setPositiveButton("View", (dialog, which) -> {
+            openPdfFile(pdfFile);
+        });
 
-        // Ensure charts are properly rendered before export
-        if (chartType == CHART_TYPE_MONTHLY) {
-            barChart.invalidate();
-        } else {
-            pieChart.invalidate();
+        // Share option
+        builder.setNegativeButton("Share", (dialog, which) -> {
+            sharePdfFile(pdfFile);
+        });
+
+        // Close option
+        builder.setNeutralButton("Close", (dialog, which) -> {
+            dialog.dismiss();
+        });
+
+        builder.create().show();
+    }
+
+    private void openPdfFile(File pdfFile) {
+        try {
+            Uri fileUri = FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".provider",
+                    pdfFile);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(fileUri, "application/pdf");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            Intent chooser = Intent.createChooser(intent, "Open PDF with...");
+
+            // Verify the intent will resolve to an activity
+            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(chooser);
+            } else {
+                Toast.makeText(requireContext(),
+                        "No PDF viewer app found", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening PDF file", e);
+            Toast.makeText(requireContext(),
+                    "Error opening PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
 
-        PdfExporter pdfExporter = new PdfExporter(requireContext());
-        pdfExporter.exportChart(
-                transactions,
-                categories,
-                chartType == CHART_TYPE_MONTHLY ? barChart : pieChart,
-                chartTypeText,
-                timeFrameText,
-                new PdfExporter.OnPdfExportListener() {
-                    @Override
-                    public void onSuccess(String filePath) {
-                        progressDialog.dismiss();
+    private void sharePdfFile(File pdfFile) {
+        try {
+            Uri fileUri = FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".provider",
+                    pdfFile);
 
-                        // Show success dialog with option to view the file
-                        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-                        builder.setTitle(R.string.export_successful);
-                        builder.setMessage(getString(R.string.pdf_exported_successfully, filePath));
-                        builder.setPositiveButton(R.string.view_file, (dialog, which) -> {
-                            // Open the PDF file
-                            try {
-                                File file = new File(filePath);
-                                Uri uri = FileProvider.getUriForFile(
-                                        requireContext(),
-                                        requireContext().getApplicationContext().getPackageName() + ".provider",
-                                        file);
-                                Intent intent = new Intent(Intent.ACTION_VIEW);
-                                intent.setDataAndType(uri, "application/pdf");
-                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                startActivity(intent);
-                            } catch (Exception e) {
-                                Toast.makeText(getActivity(), R.string.cannot_open_pdf, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        builder.setNegativeButton(R.string.close, null);
-                        builder.show();
-                    }
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/pdf");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-                    @Override
-                    public void onError(Exception e) {
-                        progressDialog.dismiss();
-                        Log.e("ChartsFragment", "PDF export error", e);
-                        Toast.makeText(getActivity(),
-                                getString(R.string.pdf_export_failed, e.getMessage()),
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
+            startActivity(Intent.createChooser(shareIntent, "Share PDF"));
+        } catch (Exception e) {
+            Log.e(TAG, "Error sharing PDF file", e);
+            Toast.makeText(requireContext(),
+                    "Error sharing PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }

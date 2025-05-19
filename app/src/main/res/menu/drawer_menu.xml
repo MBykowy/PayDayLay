@@ -21,9 +21,13 @@
             android:id="@+id/nav_charts"
             android:icon="@android:drawable/ic_menu_gallery"
             android:title="@string/menu_charts" />
+        <item
+            android:id="@+id/nav_budgets"
+            android:icon="@drawable/ic_budget"
+            android:title="@string/title_budgets" />
     </group>
 
-    <item android:title="Other">
+    <item android:title="@string/other">
         <menu>
             <item
                 android:id="@+id/nav_settings"

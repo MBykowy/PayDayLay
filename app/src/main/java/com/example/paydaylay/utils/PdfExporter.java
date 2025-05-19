@@ -3,13 +3,12 @@ package com.example.paydaylay.utils;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.pdf.PdfDocument;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 
-import com.example.paydaylay.models.Category;
-import com.example.paydaylay.models.Transaction;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.PieChart;
@@ -19,7 +18,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 public class PdfExporter {
@@ -35,17 +33,16 @@ public class PdfExporter {
         void onError(Exception e);
     }
 
-    public void exportChart(List<Transaction> transactions,
-                            List<Category> categories,
-                            Chart chart,
-                            String chartType,
-                            String timeFrame,
-                            OnPdfExportListener listener) {
-
+    public void exportChart(Chart chart, String chartTitle, OnPdfExportListener listener) {
         try {
-            // Create directory if it doesn't exist
-            File directory = new File(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS), "PaydayLay");
+            // Use the app's private directory or Downloads directory
+            File directory;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                directory = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "PaydayLay");
+            } else {
+                directory = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS), "PaydayLay");
+            }
 
             Log.d(TAG, "Storage directory path: " + directory.getAbsolutePath());
 
@@ -73,14 +70,29 @@ public class PdfExporter {
                 throw new IOException("Failed to render chart bitmap");
             }
 
-            // Create PDF page
+            // Create PDF page with some padding
+            int padding = 50;
             PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
-                    chartBitmap.getWidth(), chartBitmap.getHeight(), 1).create();
+                    chartBitmap.getWidth() + padding * 2,
+                    chartBitmap.getHeight() + padding * 2 + 80, // Extra space for title
+                    1).create();
+
             PdfDocument.Page page = document.startPage(pageInfo);
 
-            // Draw chart on page
+            // Draw chart on page with padding
             Canvas canvas = page.getCanvas();
-            canvas.drawBitmap(chartBitmap, 0, 0, null);
+
+            // Fill background
+            canvas.drawColor(Color.WHITE);
+
+            // Draw title
+            android.graphics.Paint titlePaint = new android.graphics.Paint();
+            titlePaint.setColor(Color.BLACK);
+            titlePaint.setTextSize(30);
+            canvas.drawText(chartTitle, padding, 60, titlePaint);
+
+            // Draw chart
+            canvas.drawBitmap(chartBitmap, padding, padding + 80, null);
 
             // Finish page
             document.finishPage(page);
@@ -103,26 +115,37 @@ public class PdfExporter {
     }
 
     private Bitmap getChartBitmap(Chart chart) {
-        // Make sure chart is properly measured and laid out
+        // Ensure the chart is fully rendered
+        if (chart instanceof PieChart) {
+            ((PieChart) chart).invalidate();
+        } else if (chart instanceof BarChart) {
+            ((BarChart) chart).invalidate();
+        }
+
+        // Get chart dimensions
         int width = chart.getWidth();
         int height = chart.getHeight();
 
-        Log.d(TAG, "Chart dimensions: " + width + "x" + height);
-
         if (width <= 0 || height <= 0) {
-            // If chart hasn't been measured yet, use default dimensions
-            width = 800;
-            height = 600;
+            // Use sensible defaults for unrendered charts
+            width = 1200;
+            height = 800;
+
+            // Force measure and layout
             chart.measure(
                     View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY)
-            );
+                    View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
             chart.layout(0, 0, width, height);
         }
 
-        // Create bitmap and draw chart
+        // Create bitmap with appropriate configuration
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
+
+        // Draw chart background
+        canvas.drawColor(Color.WHITE);
+
+        // Draw the chart
         chart.draw(canvas);
 
         return bitmap;

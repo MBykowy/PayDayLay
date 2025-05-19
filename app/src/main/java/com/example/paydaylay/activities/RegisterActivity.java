@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.paydaylay.R;
 import com.example.paydaylay.firebase.AuthManager;
 
-public class RegisterActivity extends AppCompatActivity {
+public class RegisterActivity extends BaseActivity {
 
     private EditText editTextEmail, editTextPassword, editTextConfirmPassword;
     private Button buttonRegister;

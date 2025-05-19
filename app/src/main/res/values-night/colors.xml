@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="progress_warning">#FF1100</color>
+    <color name="progress_danger">#FFC107</color>
+    <color name="progress_normal">#4CAF50</color>
+</resources>

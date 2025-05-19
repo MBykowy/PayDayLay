@@ -5,6 +5,7 @@ import com.google.firebase.firestore.DocumentId;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Date;
 
 public class Budget implements Serializable {
     @DocumentId
@@ -14,6 +15,7 @@ public class Budget implements Serializable {
     private String userId;
     private long periodStartDate; // timestamp for period start
     private int periodType; // 0 - daily, 1 - weekly, 2 - monthly, 3 - yearly
+    private long createdAt; // timestamp for creation date
 
     // Constants for period types
     public static final int PERIOD_DAILY = 0;
@@ -25,6 +27,8 @@ public class Budget implements Serializable {
     public Budget() {
     }
 
+
+
     public Budget(double limit, String categoryId, String userId, long periodStartDate, int periodType) {
         this.limit = limit;
         this.categoryId = categoryId;
@@ -33,6 +37,7 @@ public class Budget implements Serializable {
         this.periodType = periodType;
     }
 
+    // Add to your toMap() method
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("limit", limit);
@@ -40,8 +45,21 @@ public class Budget implements Serializable {
         map.put("userId", userId);
         map.put("periodStartDate", periodStartDate);
         map.put("periodType", periodType);
+        map.put("createdAt", createdAt);
+        map.put("spent", spent);
         return map;
     }
+
+    // Replace your existing setCreatedAt method
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    // Add the getter
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
 
     // Getters and setters
     public String getId() {
@@ -90,5 +108,22 @@ public class Budget implements Serializable {
 
     public void setPeriodType(int periodType) {
         this.periodType = periodType;
+    }
+    private double spent = 0;
+
+    /**
+     * Zwraca aktualną kwotę wydaną w ramach budżetu
+     * @return kwota wydana
+     */
+    public double getSpent() {
+        return spent;
+    }
+
+    /**
+     * Ustawia kwotę wydaną w ramach budżetu
+     * @param spent kwota wydana
+     */
+    public void setSpent(double spent) {
+        this.spent = spent;
     }
 }

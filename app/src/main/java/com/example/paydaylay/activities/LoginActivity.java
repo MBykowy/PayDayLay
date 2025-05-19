@@ -15,7 +15,7 @@ import com.example.paydaylay.R;
 import com.example.paydaylay.firebase.AuthManager;
 import com.google.firebase.FirebaseApp;
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private EditText editTextEmail, editTextPassword;
     private Button buttonLogin;

@@ -27,7 +27,7 @@ import com.google.android.material.card.MaterialCardView;
 import java.util.Arrays;
 import java.util.List;
 
-public class CategoryActivity extends AppCompatActivity {
+public class CategoryActivity extends BaseActivity {
 
     private EditText editTextCategoryName;
     private GridLayout gridLayoutColors;

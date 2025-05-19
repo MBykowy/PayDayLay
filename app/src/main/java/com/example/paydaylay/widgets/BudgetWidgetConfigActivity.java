@@ -1,174 +1,180 @@
 package com.example.paydaylay.widgets;
 
-import android.app.Activity;
 import android.appwidget.AppWidgetManager;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.paydaylay.R;
+import com.example.paydaylay.adapters.BudgetSelectionAdapter;
 import com.example.paydaylay.firebase.AuthManager;
 import com.example.paydaylay.firebase.DatabaseManager;
 import com.example.paydaylay.models.Budget;
 import com.example.paydaylay.models.Category;
+import com.example.paydaylay.utils.AlarmPermissionHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BudgetWidgetConfigActivity extends AppCompatActivity {
+public class BudgetWidgetConfigActivity extends AppCompatActivity implements BudgetSelectionAdapter.OnBudgetSelectedListener {
 
-    private static final String PREFS_WIDGET_CATEGORY = "widget_category_";
-    private static final String PREFS_WIDGET_BUDGET_TYPE = "widget_budget_type_";
+    private static final String TAG = "BudgetWidgetConfig";
 
     private int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
-    private Spinner spinnerCategory;
-    private RadioGroup radioGroupBudgetType;
-    private Button buttonSave;
-
-    private AuthManager authManager;
     private DatabaseManager databaseManager;
-    private List<Category> categories;
-    private List<String> categoryNames;
-    private List<String> categoryIds;
+    private AuthManager authManager;
+
+    private RecyclerView recyclerView;
+    private ProgressBar progressBar;
+    private TextView textViewNoBudgets;
+    private BudgetSelectionAdapter adapter;
+    private List<Budget> budgets = new ArrayList<>();
+    private List<Category> categories = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setResult(RESULT_CANCELED);
         setContentView(R.layout.activity_widget_config);
 
-        // Set result CANCELED in case user backs out
-        setResult(RESULT_CANCELED);
+        // Inicjalizacja menedżerów
+        databaseManager = new DatabaseManager();
+        authManager = new AuthManager();
 
-        // Find the widget id from the intent
-        Intent intent = getIntent();
-        Bundle extras = intent.getExtras();
-        if (extras != null) {
-            appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID,
-                    AppWidgetManager.INVALID_APPWIDGET_ID);
+        // Inicjalizacja widoków
+        recyclerView = findViewById(R.id.recyclerViewBudgetSelection);
+        progressBar = findViewById(R.id.progressBarWidgetConfig);
+        textViewNoBudgets = findViewById(R.id.textViewNoBudgetsWidget);
+
+        // Konfiguracja RecyclerView
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new BudgetSelectionAdapter(this, budgets, categories);
+        adapter.setOnBudgetSelectedListener(this);
+        recyclerView.setAdapter(adapter);
+
+        // Sprawdź uprawnienia do alarmów
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!AlarmPermissionHelper.checkAlarmPermission(this)) {
+                AlarmPermissionHelper.requestAlarmPermission(this);
+            }
         }
 
-        // If this activity was started with an invalid widget ID, exit
+        // Pobieranie ID widgetu z intencji
+        appWidgetId = getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
+                AppWidgetManager.INVALID_APPWIDGET_ID);
+
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
             finish();
             return;
         }
 
-        // Initialize views
-        spinnerCategory = findViewById(R.id.spinnerCategory);
-        radioGroupBudgetType = findViewById(R.id.radioGroupBudgetType);
-        buttonSave = findViewById(R.id.buttonSave);
-
-        authManager = new AuthManager();
-        databaseManager = new DatabaseManager();
-        categories = new ArrayList<>();
-        categoryNames = new ArrayList<>();
-        categoryIds = new ArrayList<>();
-
-        // Add "Overall Budget" option
-        categoryNames.add(getString(R.string.overall_budget));
-        categoryIds.add(null);
-
-        // Check if user is logged in
-        String userId = authManager.getCurrentUserId();
-        if (userId == null) {
-            Toast.makeText(this, R.string.please_login_first, Toast.LENGTH_SHORT).show();
+        // Sprawdzenie, czy użytkownik jest zalogowany
+        if (!authManager.isUserLoggedInForWidget(this)) {
+            Toast.makeText(this, R.string.widget_login_required, Toast.LENGTH_LONG).show();
             finish();
             return;
         }
 
-        // Load categories
-        loadCategories(userId);
-
-        // Save button click
-        buttonSave.setOnClickListener(v -> saveWidgetConfiguration());
+        // Pobieranie budżetów
+        loadBudgetsForWidget();
     }
 
-    private void loadCategories(String userId) {
-        // Show loading indication
-        spinnerCategory.setEnabled(false);
-        buttonSave.setEnabled(false);
+    private void loadBudgetsForWidget() {
+        String userId = authManager.getCurrentUserId();
+        if (userId == null) {
+            showError(getString(R.string.not_logged_in));
+            return;
+        }
 
+        showLoading(true);
+
+        // Najpierw pobierz kategorie
         databaseManager.getCategories(userId, new DatabaseManager.OnCategoriesLoadedListener() {
             @Override
             public void onCategoriesLoaded(List<Category> loadedCategories) {
+                categories.clear();
                 categories.addAll(loadedCategories);
 
-                for (Category category : loadedCategories) {
-                    categoryNames.add(category.getName());
-                    categoryIds.add(category.getId());
-                }
+                // Następnie pobierz budżety
+                databaseManager.getBudgets(userId, new DatabaseManager.OnBudgetsLoadedListener() {
+                    @Override
+                    public void onBudgetsLoaded(List<Budget> loadedBudgets) {
+                        showLoading(false);
+                        budgets.clear();
+                        budgets.addAll(loadedBudgets);
+                        updateUI();
+                    }
 
-                // Set up spinner adapter
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                        BudgetWidgetConfigActivity.this,
-                        android.R.layout.simple_spinner_item,
-                        categoryNames);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerCategory.setAdapter(adapter);
-
-                // Enable controls
-                spinnerCategory.setEnabled(true);
-                buttonSave.setEnabled(true);
+                    @Override
+                    public void onError(Exception e) {
+                        showLoading(false);
+                        showError("Błąd podczas ładowania budżetów: " + e.getMessage());
+                    }
+                });
             }
 
             @Override
             public void onError(Exception e) {
-                Toast.makeText(BudgetWidgetConfigActivity.this,
-                        getString(R.string.error_loading_categories),
-                        Toast.LENGTH_SHORT).show();
-                finish();
+                showLoading(false);
+                showError("Błąd podczas ładowania kategorii: " + e.getMessage());
             }
         });
     }
 
-    private void saveWidgetConfiguration() {
-        // Get selected category
-        int selectedPosition = spinnerCategory.getSelectedItemPosition();
-        String selectedCategoryId = categoryIds.get(selectedPosition);
+    @Override
+    public void onBudgetSelected(Budget budget) {
+        // Zapisz ID budżetu dla tego widgetu
+        BudgetWidgetProvider.saveBudgetIdPref(this, appWidgetId, budget.getId());
 
-        // Get selected budget type
-        int budgetType;
-        int checkedId = radioGroupBudgetType.getCheckedRadioButtonId();
-        if (checkedId == R.id.radioButtonDaily) {
-            budgetType = Budget.PERIOD_DAILY;
-        } else if (checkedId == R.id.radioButtonWeekly) {
-            budgetType = Budget.PERIOD_WEEKLY;
-        } else if (checkedId == R.id.radioButtonYearly) {
-            budgetType = Budget.PERIOD_YEARLY;
-        } else {
-            budgetType = Budget.PERIOD_MONTHLY;
-        }
+        // Zapisz dane budżetu w SharedPreferences
+        BudgetWidgetDataHelper dataHelper = new BudgetWidgetDataHelper(this);
+        dataHelper.saveBudgetForWidget(appWidgetId, budget);
 
-        // Save preferences
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(PREFS_WIDGET_CATEGORY + appWidgetId, selectedCategoryId);
-        editor.putInt(PREFS_WIDGET_BUDGET_TYPE + appWidgetId, budgetType);
-        editor.apply();
-
-
-        // Update widget
+        // Aktualizuj widget z wybranym budżetem
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-        Intent updateIntent = new Intent(this, BudgetWidgetProvider.class);
-        updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-        updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{appWidgetId});
-        sendBroadcast(updateIntent);
+        BudgetWidgetProvider.updateAppWidget(this, appWidgetManager, appWidgetId);
 
-        // Set the result as success
+        // Zakończ aktywność z powodzeniem
         Intent resultValue = new Intent();
         resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         setResult(RESULT_OK, resultValue);
         finish();
+    }
+
+    private void updateUI() {
+        if (budgets.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+            textViewNoBudgets.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            textViewNoBudgets.setVisibility(View.GONE);
+            adapter = new BudgetSelectionAdapter(this, budgets, categories);
+            adapter.setOnBudgetSelectedListener(this);
+            recyclerView.setAdapter(adapter);
+        }
+    }
+
+    private void showLoading(boolean isLoading) {
+        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (isLoading) {
+            recyclerView.setVisibility(View.GONE);
+            textViewNoBudgets.setVisibility(View.GONE);
+        }
+    }
+
+    private void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        Log.e(TAG, message);
+        textViewNoBudgets.setText(R.string.error_loading_budgets);
+        textViewNoBudgets.setVisibility(View.VISIBLE);
     }
 }

@@ -3,6 +3,7 @@ package com.example.paydaylay.firebase;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -52,6 +53,19 @@ public class AuthManager {
                     }
                 });
     }
+
+
+    // Add this method to your AuthManager.java
+    public boolean isUserLoggedInForWidget(Context context) {
+        try {
+            String userId = getCurrentUserId();
+            return userId != null;
+        } catch (Exception e) {
+            Log.e("AuthManager", "Error checking login state in widget", e);
+            return false;
+        }
+    }
+
 
     public boolean isSavedSessionExists(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);

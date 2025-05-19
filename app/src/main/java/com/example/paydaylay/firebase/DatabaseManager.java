@@ -1,26 +1,41 @@
 package com.example.paydaylay.firebase;
 
-import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 
+import com.example.paydaylay.database.AppDatabase;
+import com.example.paydaylay.database.TransactionEntity;
 import com.example.paydaylay.models.Budget;
 import com.example.paydaylay.models.Category;
 import com.example.paydaylay.models.Transaction;
-import com.example.paydaylay.widgets.BudgetWidgetProvider;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
+import com.example.paydaylay.widgets.BudgetWidgetDataHelper;
+
+
+import android.content.Intent;
+import java.util.Calendar;
+import android.content.ComponentName;
+import com.example.paydaylay.widgets.BudgetWidgetProvider;
+
+
 public class DatabaseManager {
+    private static final String TAG = "DatabaseManager";
     private final FirebaseFirestore db;
     private final String TRANSACTIONS_COLLECTION = "transactions";
     private final String CATEGORIES_COLLECTION = "categories";
@@ -38,6 +53,24 @@ public class DatabaseManager {
         db.setFirestoreSettings(settings);
     }
 
+    // Interface for general completion callback
+    public interface OnCompletionListener {
+        void onSuccess();
+        void onError(Exception e);
+    }
+    // Interface for budget saved operations
+    public interface OnBudgetSavedListener {
+        void onBudgetSaved(Budget budget);
+        void onError(Exception e);
+    }
+
+    public static void initAppCheck(Context context) {
+        // Just make sure Firebase is initialized
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            FirebaseApp.initializeApp(context);
+        }
+        Log.d("DatabaseManager", "Firebase initialized");
+    }
     // Interface for user operations
     public interface OnUserOperationListener {
         void onSuccess();
@@ -77,6 +110,18 @@ public class DatabaseManager {
     // Interface for loading budgets
     public interface OnBudgetsLoadedListener {
         void onBudgetsLoaded(List<Budget> budgets);
+        void onError(Exception e);
+    }
+
+    // Interface for budget operations
+    public interface OnBudgetOperationListener {
+        void onSuccess();
+        void onError(Exception e);
+    }
+
+    // Interface for real-time updates
+    public interface OnRealtimeTransactionsListener {
+        void onTransactionsUpdated(List<Transaction> transactions);
         void onError(Exception e);
     }
 
@@ -132,11 +177,7 @@ public class DatabaseManager {
                 .addOnFailureListener(listener::onError);
     }
 
-    // Budget operations (create, update, delete)
-    public interface OnBudgetOperationListener {
-        void onSuccess();
-        void onError(Exception e);
-    }
+    // BUDGET METHODS
 
     public void addBudget(Budget budget, OnBudgetOperationListener listener) {
         db.collection(BUDGETS_COLLECTION)
@@ -148,6 +189,69 @@ public class DatabaseManager {
                 .addOnFailureListener(listener::onError);
     }
 
+
+    public void getBudgetById(String budgetId, OnBudgetLoadedListener listener) {
+        db.collection("budgets").document(budgetId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Budget budget = null;
+                    if (documentSnapshot.exists()) {
+                        budget = documentSnapshot.toObject(Budget.class);
+                        budget.setId(documentSnapshot.getId());
+                    }
+                    listener.onBudgetLoaded(budget);
+                })
+                .addOnFailureListener(e -> {
+                    listener.onError(e);
+                });
+    }
+
+    public interface OnBudgetLoadedListener {
+        void onBudgetLoaded(Budget budget);
+        void onError(Exception e);
+    }
+    public void saveBudget(Budget budget, OnBudgetSavedListener listener) {
+        if (budget == null) {
+            if (listener != null) {
+                listener.onError(new IllegalArgumentException("Budget cannot be null"));
+            }
+            return;
+        }
+
+        // Check if this is a new budget or existing one
+        if (budget.getId() == null || budget.getId().isEmpty()) {
+            // Add new budget
+            db.collection(BUDGETS_COLLECTION)
+                    .add(budget.toMap())
+                    .addOnSuccessListener(documentReference -> {
+                        budget.setId(documentReference.getId());
+                        if (listener != null) {
+                            listener.onBudgetSaved(budget);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (listener != null) {
+                            listener.onError(e);
+                        }
+                    });
+        } else {
+            // Update existing budget
+            db.collection(BUDGETS_COLLECTION)
+                    .document(budget.getId())
+                    .update(budget.toMap())
+                    .addOnSuccessListener(aVoid -> {
+                        if (listener != null) {
+                            listener.onBudgetSaved(budget);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (listener != null) {
+                            listener.onError(e);
+                        }
+                    });
+        }
+    }
+
     public void updateBudget(Budget budget, OnBudgetOperationListener listener) {
         db.collection(BUDGETS_COLLECTION)
                 .document(budget.getId())
@@ -156,15 +260,222 @@ public class DatabaseManager {
                 .addOnFailureListener(listener::onError);
     }
 
-    public void deleteBudget(String budgetId, OnBudgetOperationListener listener) {
+    public void deleteBudget(Budget budget, OnCompletionListener listener) {
+        if (budget == null) {
+            if (listener != null) {
+                listener.onError(new IllegalArgumentException("Budget cannot be null"));
+            }
+            return;
+        }
+
+        String budgetId = budget.getId();
+        if (budgetId == null || budgetId.isEmpty()) {
+            if (listener != null) {
+                listener.onError(new IllegalArgumentException("Budget ID cannot be null or empty"));
+            }
+            return;
+        }
+
         db.collection(BUDGETS_COLLECTION)
                 .document(budgetId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (listener != null) {
+                        listener.onSuccess();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (listener != null) {
+                        listener.onError(e);
+                    }
+                });
+    }
+    public void getBudgets(String userId, OnBudgetsLoadedListener listener) {
+        db.collection(BUDGETS_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Budget> budgets = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        Budget budget = doc.toObject(Budget.class);
+                        if (budget != null) {
+                            budget.setId(doc.getId());
+                            budgets.add(budget);
+                        }
+                    }
+                    listener.onBudgetsLoaded(budgets);
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    public void getBudgetsByCategory(String userId, String categoryId, OnBudgetsLoadedListener listener) {
+        db.collection(BUDGETS_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("categoryId", categoryId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Budget> budgets = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        Budget budget = doc.toObject(Budget.class);
+                        if (budget != null) {
+                            budget.setId(doc.getId());
+                            budgets.add(budget);
+                        }
+                    }
+                    listener.onBudgetsLoaded(budgets);
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    // TRANSACTION METHODS
+
+    public void addTransaction(Transaction transaction, OnTransactionListener listener) {
+        addTransaction(transaction, listener, null);
+    }
+
+    public void addTransaction(Transaction transaction, OnTransactionListener listener, Context context) {
+        db.collection(TRANSACTIONS_COLLECTION)
+                .add(transaction.toMap())
+                .addOnSuccessListener(documentReference -> {
+                    transaction.setId(documentReference.getId());
+                    listener.onSuccess();
+                    if (context != null) {
+                        updateBudgetWidgets(context);
+                    }
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    public void addTransaction(Transaction transaction, OnTransactionAddedListener listener) {
+        addTransaction(transaction, listener, null);
+    }
+
+    public void addTransaction(Transaction transaction, OnTransactionAddedListener listener, Context context) {
+        db.collection(TRANSACTIONS_COLLECTION)
+                .add(transaction.toMap())
+                .addOnSuccessListener(documentReference -> {
+                    transaction.setId(documentReference.getId());
+                    listener.onTransactionAdded(transaction);
+                    if (context != null) {
+                        updateBudgetWidgets(context);
+                    }
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    public void updateTransaction(Transaction transaction, OnTransactionListener listener) {
+        updateTransaction(transaction, listener, null);
+    }
+
+    public void updateTransaction(Transaction transaction, OnTransactionListener listener, Context context) {
+        db.collection(TRANSACTIONS_COLLECTION)
+                .document(transaction.getId())
+                .update(transaction.toMap())
+                .addOnSuccessListener(aVoid -> {
+                    listener.onSuccess();
+                    if (context != null) {
+                        updateBudgetWidgets(context);
+                    }
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    public void deleteTransaction(String transactionId, OnTransactionListener listener) {
+        db.collection(TRANSACTIONS_COLLECTION)
+                .document(transactionId)
                 .delete()
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(listener::onError);
     }
 
-    // Advanced query methods
+    public void getTransactions(String userId, OnTransactionsLoadedListener listener) {
+        fetchTransactionsFromFirestore(userId, listener, null);
+    }
+
+    public void getTransactions(String userId, OnTransactionsLoadedListener listener, Context context) {
+        if (context == null) {
+            getTransactions(userId, listener);
+            return;
+        }
+
+        // First try to get cached data
+        new Thread(() -> {
+            try {
+                List<TransactionEntity> cachedEntities = AppDatabase.getInstance(context)
+                        .transactionDao().getTransactionsByUser(userId);
+
+                if (!cachedEntities.isEmpty()) {
+                    List<Transaction> transactions = new ArrayList<>();
+                    for (TransactionEntity entity : cachedEntities) {
+                        transactions.add(entity.toTransaction());
+                    }
+
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            listener.onTransactionsLoaded(transactions));
+                }
+
+                // Then fetch from Firestore to ensure up-to-date data
+                fetchTransactionsFromFirestore(userId, listener, context);
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting cached transactions", e);
+                // Fall back to Firestore if local db fails
+                fetchTransactionsFromFirestore(userId, listener, context);
+            }
+        }).start();
+    }
+
+    private void fetchTransactionsFromFirestore(String userId, OnTransactionsLoadedListener listener, Context context) {
+        db.collection(TRANSACTIONS_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .orderBy("date", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Transaction> transactions = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                        Transaction transaction = doc.toObject(Transaction.class);
+                        if (transaction != null) {
+                            transaction.setId(doc.getId());
+                            transactions.add(transaction);
+                        }
+                    }
+
+                    // Update the cache if context is provided
+                    if (context != null) {
+                        updateTransactionCache(userId, transactions, context);
+                    }
+
+                    listener.onTransactionsLoaded(transactions);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching transactions", e);
+                    if (listener != null) {
+                        listener.onError(e);
+                    }
+                });
+    }
+
+    private void fetchTransactionsFromFirestore(String userId, OnTransactionsLoadedListener listener) {
+        fetchTransactionsFromFirestore(userId, listener, null);
+    }
+
+    private void updateTransactionCache(String userId, List<Transaction> transactions, Context context) {
+        new Thread(() -> {
+            try {
+                List<TransactionEntity> entities = new ArrayList<>();
+                for (Transaction transaction : transactions) {
+                    entities.add(TransactionEntity.fromTransaction(transaction));
+                }
+
+                AppDatabase db = AppDatabase.getInstance(context);
+                db.transactionDao().deleteAllByUser(userId);
+                db.transactionDao().insertAll(entities);
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating cache", e);
+            }
+        }).start();
+    }
+
     public void getTransactionsByDateRange(String userId, Date startDate, Date endDate,
                                            OnTransactionsLoadedListener listener) {
         db.collection(TRANSACTIONS_COLLECTION)
@@ -187,10 +498,26 @@ public class DatabaseManager {
                 .addOnFailureListener(listener::onError);
     }
 
-    // Add listener for real-time updates
-    public interface OnRealtimeTransactionsListener {
-        void onTransactionsUpdated(List<Transaction> transactions);
-        void onError(Exception e);
+    public void getTransactionsForBudget(String userId, String categoryId, Date startDate, Date endDate,
+                                         OnTransactionsLoadedListener listener) {
+        db.collection(TRANSACTIONS_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("categoryId", categoryId)
+                .whereGreaterThanOrEqualTo("date", startDate)
+                .whereLessThan("date", endDate)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Transaction> transactions = new ArrayList<>();
+                    for (DocumentSnapshot document : queryDocumentSnapshots) {
+                        Transaction transaction = document.toObject(Transaction.class);
+                        if (transaction != null) {
+                            transaction.setId(document.getId());
+                            transactions.add(transaction);
+                        }
+                    }
+                    listener.onTransactionsLoaded(transactions);
+                })
+                .addOnFailureListener(listener::onError);
     }
 
     public com.google.firebase.firestore.ListenerRegistration addTransactionsRealtimeListener(
@@ -219,184 +546,7 @@ public class DatabaseManager {
                 });
     }
 
-    /**
-     * Broadcasts an update request to all budget widgets
-     * Call this method whenever transactions or budgets change
-     */
-    public void updateBudgetWidgets(Context context) {
-        // Get AppWidgetManager instance
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-
-        // Get all widget IDs for the BudgetWidgetProvider
-        ComponentName thisWidget = new ComponentName(context, BudgetWidgetProvider.class);
-        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget);
-
-        // If there are widgets to update, send broadcast
-        if (appWidgetIds != null && appWidgetIds.length > 0) {
-            Intent updateIntent = new Intent(context, BudgetWidgetProvider.class);
-            updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-            updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
-            context.sendBroadcast(updateIntent);
-        }
-    }
-
-    // Fix the context casting issue
-    public void addTransaction(Transaction transaction, OnTransactionAddedListener listener, Context context) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .add(transaction.toMap())
-                .addOnSuccessListener(documentReference -> {
-                    transaction.setId(documentReference.getId());
-                    listener.onTransactionAdded(transaction);
-
-                    // Update widgets if context is provided
-                    if (context != null) {
-                        updateBudgetWidgets(context);
-                    }
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    // Alternative addTransaction method without requiring context
-    public void addTransaction(Transaction transaction, OnTransactionAddedListener listener) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .add(transaction.toMap())
-                .addOnSuccessListener(documentReference -> {
-                    transaction.setId(documentReference.getId());
-                    listener.onTransactionAdded(transaction);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    // Add methods for categories
-    public void getCategories(String userId, OnCategoriesLoadedListener listener) {
-        db.collection(CATEGORIES_COLLECTION)
-                .whereEqualTo("userId", userId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Category> categories = new ArrayList<>();
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                        Category category = doc.toObject(Category.class);
-                        if (category != null) {
-                            category.setId(doc.getId());
-                            categories.add(category);
-                        }
-                    }
-                    listener.onCategoriesLoaded(categories);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    // Method to get budgets for a specific user
-    public void getBudgets(String userId, OnBudgetsLoadedListener listener) {
-        db.collection(BUDGETS_COLLECTION)
-                .whereEqualTo("userId", userId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Budget> budgets = new ArrayList<>();
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                        Budget budget = doc.toObject(Budget.class);
-                        if (budget != null) {
-                            budget.setId(doc.getId());
-                            budgets.add(budget);
-                        }
-                    }
-                    listener.onBudgetsLoaded(budgets);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    // Method to get budgets for a specific category
-    public void getBudgetsByCategory(String userId, String categoryId, OnBudgetsLoadedListener listener) {
-        db.collection(BUDGETS_COLLECTION)
-                .whereEqualTo("userId", userId)
-                .whereEqualTo("categoryId", categoryId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Budget> budgets = new ArrayList<>();
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                        Budget budget = doc.toObject(Budget.class);
-                        if (budget != null) {
-                            budget.setId(doc.getId());
-                            budgets.add(budget);
-                        }
-                    }
-                    listener.onBudgetsLoaded(budgets);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-
-    // For updating transactions with OnTransactionListener
-    public void updateTransaction(Transaction transaction, OnTransactionListener listener) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .document(transaction.getId())
-                .update(transaction.toMap())
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(listener::onError);
-    }
-
-    // For updating transactions with Context for widget updates
-    public void updateTransaction(Transaction transaction, OnTransactionListener listener, Context context) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .document(transaction.getId())
-                .update(transaction.toMap())
-                .addOnSuccessListener(aVoid -> {
-                    listener.onSuccess();
-                    if (context != null) {
-                        updateBudgetWidgets(context);
-                    }
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    // For deleting transactions
-    public void deleteTransaction(String transactionId, OnTransactionListener listener) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .document(transactionId)
-                .delete()
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(listener::onError);
-    }
-
-    // For adding transactions with OnTransactionListener
-    public void addTransaction(Transaction transaction, OnTransactionListener listener) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .add(transaction.toMap())
-                .addOnSuccessListener(documentReference -> {
-                    transaction.setId(documentReference.getId());
-                    listener.onSuccess();
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    // For adding transactions with Context for widget updates
-    public void addTransaction(Transaction transaction, OnTransactionListener listener, Context context) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .add(transaction.toMap())
-                .addOnSuccessListener(documentReference -> {
-                    transaction.setId(documentReference.getId());
-                    listener.onSuccess();
-                    if (context != null) {
-                        updateBudgetWidgets(context);
-                    }
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    public void getTransactions(String userId, OnTransactionsLoadedListener listener) {
-        db.collection(TRANSACTIONS_COLLECTION)
-                .whereEqualTo("userId", userId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Transaction> transactions = new ArrayList<>();
-                    for (DocumentSnapshot document : queryDocumentSnapshots) {
-                        Transaction transaction = document.toObject(Transaction.class);
-                        transactions.add(transaction);
-                    }
-                    listener.onTransactionsLoaded(transactions);
-                })
-                .addOnFailureListener(e -> listener.onError(e));
-    }
+    // CATEGORY METHODS
 
     public void addCategory(Category category, OnCategoryOperationListener listener) {
         db.collection(CATEGORIES_COLLECTION)
@@ -424,30 +574,163 @@ public class DatabaseManager {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Get transactions for a specific budget (filtered by category and date range)
-     * @param userId The user ID
-     * @param categoryId The category ID to filter by
-     * @param startDate Start date of the period
-     * @param endDate End date of the period
-     * @param listener Callback listener
-     */
-    public void getTransactionsForBudget(String userId, String categoryId, Date startDate, Date endDate,
-                                         OnTransactionsLoadedListener listener) {
-        db.collection(TRANSACTIONS_COLLECTION)
+    public void getCategories(String userId, OnCategoriesLoadedListener listener) {
+        db.collection(CATEGORIES_COLLECTION)
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("categoryId", categoryId)
-                .whereGreaterThanOrEqualTo("date", startDate)
-                .whereLessThan("date", endDate)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Transaction> transactions = new ArrayList<>();
-                    for (DocumentSnapshot document : queryDocumentSnapshots) {
-                        Transaction transaction = document.toObject(Transaction.class);
-                        transactions.add(transaction);
+                    List<Category> categories = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        Category category = doc.toObject(Category.class);
+                        if (category != null) {
+                            category.setId(doc.getId());
+                            categories.add(category);
+                        }
                     }
-                    listener.onTransactionsLoaded(transactions);
+                    listener.onCategoriesLoaded(categories);
                 })
-                .addOnFailureListener(e -> listener.onError(e));
+                .addOnFailureListener(listener::onError);
+    }
+    public void updateBudgetWidgets(Context context) {
+        if (context == null) {
+            Log.e(TAG, "Context is null, can't update widgets");
+            return;
+        }
+
+        AuthManager authManager = new AuthManager();
+        String userId = authManager.getCurrentUserId();
+        if (userId == null) {
+            Log.e(TAG, "User ID is null, can't update widgets");
+            return;
+        }
+
+        // Pobierz wszystkie budżety użytkownika
+        getBudgets(userId, new OnBudgetsLoadedListener() {
+            @Override
+            public void onBudgetsLoaded(List<Budget> budgets) {
+                // Zapisz budżety w SharedPreferences
+                BudgetWidgetDataHelper dataHelper = new BudgetWidgetDataHelper(context);
+                dataHelper.saveAllBudgets(budgets);
+
+                // Zasygnalizuj widgetom, że dane zostały zaktualizowane
+                AppWidgetManager widgetManager = AppWidgetManager.getInstance(context);
+                ComponentName widgetComponent = new ComponentName(context, BudgetWidgetProvider.class);
+                int[] widgetIds = widgetManager.getAppWidgetIds(widgetComponent);
+
+                // Aktualizuj widgety
+                Intent updateIntent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                updateIntent.setComponent(widgetComponent);
+                updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds);
+                context.sendBroadcast(updateIntent);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading budgets for widgets", e);
+            }
+        });
+    }
+
+    private void updateBudgetSpending(Budget budget, Context context) {
+        // Oblicz zakres dat dla budżetu
+        Date startDate = new Date(budget.getPeriodStartDate());
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(startDate);
+
+        switch (budget.getPeriodType()) {
+            case Budget.PERIOD_DAILY:
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+                break;
+            case Budget.PERIOD_WEEKLY:
+                cal.add(Calendar.WEEK_OF_YEAR, 1);
+                break;
+            case Budget.PERIOD_MONTHLY:
+                cal.add(Calendar.MONTH, 1);
+                break;
+            case Budget.PERIOD_YEARLY:
+                cal.add(Calendar.YEAR, 1);
+                break;
+        }
+        Date endDate = cal.getTime();
+
+        // Pobierz transakcje dla tego budżetu
+        if (budget.getCategoryId() != null) {
+            // Budżet dla konkretnej kategorii
+            getTransactionsForBudget(budget.getUserId(), budget.getCategoryId(), startDate, endDate,
+                    new OnTransactionsLoadedListener() {
+                        @Override
+                        public void onTransactionsLoaded(List<Transaction> transactions) {
+                            // Oblicz sumę wydatków
+                            double totalSpent = 0;
+                            for (Transaction t : transactions) {
+                                if (t.getAmount() > 0) {
+                                    totalSpent += t.getAmount();
+                                }
+                            }
+
+                            // Zapisz zaktualizowany budżet
+                            budget.setSpent(totalSpent);
+                            BudgetWidgetDataHelper dataHelper = new BudgetWidgetDataHelper(context);
+                            dataHelper.saveAllBudgets(Collections.singletonList(budget));
+                            dataHelper.updateAllWidgets();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e(TAG, "Error loading transactions for budget", e);
+                        }
+                    });
+        } else {
+            // Budżet ogólny (wszystkie kategorie)
+            getTransactionsByDateRange(budget.getUserId(), startDate, endDate,
+                    new OnTransactionsLoadedListener() {
+                        @Override
+                        public void onTransactionsLoaded(List<Transaction> transactions) {
+                            // Oblicz sumę wydatków
+                            double totalSpent = 0;
+                            for (Transaction t : transactions) {
+                                if (t.getAmount() > 0) {
+                                    totalSpent += t.getAmount();
+                                }
+                            }
+
+                            // Zapisz zaktualizowany budżet
+                            budget.setSpent(totalSpent);
+                            BudgetWidgetDataHelper dataHelper = new BudgetWidgetDataHelper(context);
+                            dataHelper.saveAllBudgets(Collections.singletonList(budget));
+                            dataHelper.updateAllWidgets();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e(TAG, "Error loading transactions for budget", e);
+                        }
+                    });
+        }
+    }
+    public interface OnCategoryLoadedListener {
+        void onCategoryLoaded(Category category);
+        void onError(Exception e);
+    }
+
+    public void getCategoryById(String categoryId, OnCategoryLoadedListener listener) {
+        if (categoryId == null || categoryId.isEmpty()) {
+            listener.onError(new IllegalArgumentException("Category ID cannot be null or empty"));
+            return;
+        }
+
+        db.collection(CATEGORIES_COLLECTION)
+                .document(categoryId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Category category = documentSnapshot.toObject(Category.class);
+                        category.setId(documentSnapshot.getId());
+                        listener.onCategoryLoaded(category);
+                    } else {
+                        listener.onCategoryLoaded(null);
+                    }
+                })
+                .addOnFailureListener(listener::onError);
     }
 }

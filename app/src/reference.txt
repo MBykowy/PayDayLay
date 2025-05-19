@@ -1,5 +1,7 @@
 # Szczegółowa implementacja poszczególnych funkcjonalności
 
+if you have any questions, or something isnt clear please ask me. you are free to ask me anything instead of answering my questions. also if something is stupid tell me.
+
 ## 1. Logowanie/rejestracja
 1. Utworzyć `LoginActivity.java` i `RegisterActivity.java` z odpowiednimi layoutami
 2. Zaimplementować `AuthManager.java` do obsługi Firebase Authentication
@@ -87,71 +89,3 @@
 6. Dodać opcję udostępniania pliku CSV
 7. Implementować wybór zakresu dat do eksportu
 
-
-struktura plików:
-app/
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/expensemanager/
-│   │   │   ├── activities/            # Główne ekrany
-│   │   │   │   ├── MainActivity.java
-│   │   │   │   ├── LoginActivity.java
-│   │   │   │   ├── RegisterActivity.java
-│   │   │   │   ├── TransactionActivity.java
-│   │   │   │   └── SettingsActivity.java
-│   │   │   │
-│   │   │   ├── fragments/             # Fragmenty UI
-│   │   │   │   ├── DashboardFragment.java
-│   │   │   │   ├── TransactionsFragment.java
-│   │   │   │   ├── CategoriesFragment.java
-│   │   │   │   └── ChartsFragment.java
-│   │   │   │
-│   │   │   ├── adapters/              # Adaptery list
-│   │   │   │   ├── TransactionAdapter.java
-│   │   │   │   └── CategoryAdapter.java
-│   │   │   │
-│   │   │   ├── models/                # Modele danych
-│   │   │   │   ├── Transaction.java
-│   │   │   │   ├── Category.java
-│   │   │   │   ├── User.java
-│   │   │   │   └── Budget.java
-│   │   │   │
-│   │   │   ├── firebase/              # Firebase
-│   │   │   │   ├── AuthManager.java
-│   │   │   │   └── DatabaseManager.java
-│   │   │   │
-│   │   │   ├── utils/                 # Narzędzia
-│   │   │   │   ├── ThemeUtils.java
-│   │   │   │   ├── LocaleHelper.java
-│   │   │   │   ├── NotificationUtils.java
-│   │   │   │   ├── PdfExporter.java
-│   │   │   │   └── CsvExporter.java
-│   │   │   │
-│   │   │   └── widgets/               # Widżety
-│   │   │       └── BudgetWidgetProvider.java
-│   │   │
-│   │   ├── res/
-│   │   │   ├── layout/                # Układy UI
-│   │   │   │   ├── activity_main.xml
-│   │   │   │   ├── activity_login.xml
-│   │   │   │   ├── fragment_dashboard.xml
-│   │   │   │   └── ...
-│   │   │   │
-│   │   │   ├── values/                # Zasoby
-│   │   │   │   ├── colors.xml
-│   │   │   │   ├── strings.xml
-│   │   │   │   └── styles.xml
-│   │   │   │
-│   │   │   ├── values-night/          # Tryb ciemny
-│   │   │   │   └── colors.xml
-│   │   │   │
-│   │   │   ├── values-pl/             # Polski język
-│   │   │   │   └── strings.xml
-│   │   │   │
-│   │   │   └── drawable/              # Ikony i grafiki
-│   │   │
-│   │   └── AndroidManifest.xml
-│   │
-│   └── google-services.json          # Konfiguracja Firebase
-│
-└── build.gradle                      # Zależności

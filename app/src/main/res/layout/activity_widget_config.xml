@@ -1,75 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
-        android:layout_width="match_parent"
+        android:id="@+id/textViewWidgetConfigTitle"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/configure_widget"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        android:textAlignment="center"
-        android:layout_marginBottom="16dp" />
+        android:text="@string/select_budget_for_widget"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/select_category"
-        android:layout_marginTop="8dp" />
-
-    <Spinner
-        android:id="@+id/spinnerCategory"
+        android:id="@+id/textViewWidgetConfigSubtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginBottom="16dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewWidgetConfigTitle" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewBudgetSelection"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewWidgetConfigSubtitle" />
+
+    <ProgressBar
+        android:id="@+id/progressBarWidgetConfig"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:layout_width="match_parent"
+        android:id="@+id/textViewNoBudgetsWidget"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/select_budget_period"
-        android:layout_marginTop="8dp" />
+        android:gravity="center"
+        android:text="@string/no_budgets_available"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <RadioGroup
-        android:id="@+id/radioGroupBudgetType"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical">
-
-        <RadioButton
-            android:id="@+id/radioButtonDaily"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/daily" />
-
-        <RadioButton
-            android:id="@+id/radioButtonWeekly"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/weekly" />
-
-        <RadioButton
-            android:id="@+id/radioButtonMonthly"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/monthly"
-            android:checked="true" />
-
-        <RadioButton
-            android:id="@+id/radioButtonYearly"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/yearly" />
-    </RadioGroup>
-
-    <Button
-        android:id="@+id/buttonSave"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/save" />
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.paydaylay.R;
 import com.example.paydaylay.firebase.AuthManager;
 
-public class ResetPasswordActivity extends AppCompatActivity {
+public class ResetPasswordActivity extends BaseActivity {
 
     private EditText editTextEmail;
     private Button buttonReset;

@@ -25,8 +25,9 @@ import com.example.paydaylay.fragments.DashboardFragment;
 import com.example.paydaylay.fragments.TransactionsFragment;
 import com.example.paydaylay.fragments.CategoriesFragment;
 import com.example.paydaylay.fragments.ChartsFragment;
+import com.example.paydaylay.fragments.BudgetFragment;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -105,6 +106,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else if (itemId == R.id.nav_charts) {
             fragment = new ChartsFragment();
             setTitle(R.string.menu_charts);
+        } else if (itemId == R.id.nav_budgets) {
+            fragment = new BudgetFragment();
+            setTitle(R.string.title_budgets);
         } else if (itemId == R.id.nav_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
         } else if (itemId == R.id.nav_logout) {
@@ -114,7 +118,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             finish();
             return true;
         }
-
         if (fragment != null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, fragment)

@@ -1,12 +1,16 @@
 package com.example.paydaylay.utils;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+
+import com.example.paydaylay.activities.MainActivity;
 
 import java.util.Locale;
 
@@ -15,12 +19,22 @@ public class LocaleHelper {
     private static final String KEY_LANGUAGE = "selected_language";
     private static final String DEFAULT_LANGUAGE = "en"; // Default language is English
 
-    // Save selected language
+    // Save selected language and restart app to apply changes
     public static void setLocale(@NonNull Context context, String languageCode) {
-        saveLanguage(context, languageCode);
-        updateResources(context, languageCode);
-    }
+        boolean languageChanged = !languageCode.equals(getLanguage(context));
+        if (languageChanged) {
+            saveLanguage(context, languageCode);
+            updateResources(context, languageCode);
 
+            // Restart the entire app to apply changes everywhere
+            if (context instanceof Activity) {
+                Intent intent = new Intent(context, MainActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+            }
+        }
+    }
     // Save language preference to SharedPreferences
     private static void saveLanguage(Context context, String languageCode) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
